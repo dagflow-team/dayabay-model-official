@@ -321,10 +321,10 @@ class model_dayabay:
         from nested_mapping.tools import remap_items
         from numpy import arange, concatenate, linspace
 
-        from ..bundles.refine_detector_data import refine_detector_data
-        from ..bundles.refine_lsnl_data import refine_lsnl_data
-        from ..bundles.refine_reactor_data import refine_reactor_data
-        from ..bundles.sync_reactor_detector_data import sync_reactor_detector_data
+        from .bundles.refine_detector_data import refine_detector_data
+        from .bundles.refine_lsnl_data import refine_lsnl_data
+        from .bundles.refine_reactor_data import refine_reactor_data
+        from .bundles.sync_reactor_detector_data import sync_reactor_detector_data
 
         # Initialize the storage and paths
         storage = self.storage
