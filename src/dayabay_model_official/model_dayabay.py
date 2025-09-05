@@ -193,14 +193,15 @@ class model_dayabay:
         assert concatenation_mode in {"detector", "detector_period"}
 
         if source_type == "default:hdf5":
-            source_type = "hdf5"
+            self._source_type = "hdf5"
+        else:
+            self._source_type = source_type
+
         match (path_data, source_type):
             case str() | Path(), str():
-                self._source_type = source_type
                 self._path_data = Path(path_data)
             case None, str():
-                self._source_type = source_type
-                self._path_data = Path("data") / source_type
+                self._path_data = Path("data")
             case _, _:
                 raise RuntimeError(
                     f"Unsupported combination of path/source_type options: {path_data}/{source_type}"
