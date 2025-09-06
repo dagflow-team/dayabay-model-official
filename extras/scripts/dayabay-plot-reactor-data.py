@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from argparse import Namespace
 
+from dag_modelling.tools.logger import set_verbosity
 from matplotlib import pyplot as plt
 from matplotlib import transforms
 
@@ -19,6 +20,9 @@ plt.rcParams.update(
 
 
 def main(opts: Namespace) -> None:
+    if opts.verbose:
+        set_verbosity(opts.verbose)
+
     model = model_dayabay(
         source_type=opts.source_type,
         parameter_values=opts.par,
@@ -141,6 +145,7 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
 
     parser = ArgumentParser()
+    parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument(
         "--source-type",
         "--source",
