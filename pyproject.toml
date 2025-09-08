@@ -5,7 +5,7 @@ requires = [ "packaging", "setuptools", "wheel" ]
 
 [project]
 name = "dayabay-model-official"
-version = "1.0.0-1"
+version = "1.0.0"
 description = "Official model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data"
 readme = "README.md"
 license = "MIT"
@@ -19,8 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  # "dag-modelling>=0.13",
-  "dag-modelling @ git+https://git.jinr.ru/dagflow-team/dag-modelling.git@chore/disable-implicit-numpy-multithreading",
+  "dag-modelling>=0.13",
   "dgm-fit>=0.2",
   "dgm-reactor-neutrino>=0.2",
   "more-itertools",
