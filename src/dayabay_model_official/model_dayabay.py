@@ -900,9 +900,7 @@ class model_dayabay:
             # - cosθ (positron angle) edges [-1,1] are defined explicitly for the
             #   integration of the Inverse Beta Decay (IBD) cross section.
             in_edges_fine = linspace(0, 12, 241)
-            in_edges_final = concatenate(
-                ([0.7], arange(1.0, 7.0, 0.25), arange(7.0, 8.1, 0.5), [9.5], [12])
-            )
+            in_edges_final = concatenate(([0.7], arange(1.3, 7.41, 0.25), [12.0]))
             in_edges_costheta = [-1, 1]
 
             # Instantiate the storage nodes for bin edges. In what follows all the
