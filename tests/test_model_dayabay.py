@@ -5,7 +5,7 @@ from pytest import mark
 from dayabay_model_official import model_dayabay
 
 
-@mark.skip(reason="Disabled till the data is available publicly")
+# @mark.skip(reason="Disabled till the data is available publicly")
 def test_model_dayabay(output_path: str):
     model = model_dayabay()
 
