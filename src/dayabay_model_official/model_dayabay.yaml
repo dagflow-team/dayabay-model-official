@@ -1227,6 +1227,12 @@ summary:
     background_rate:
       group:
         text: "Total rate {index[0]} background events in {index[1]}"
+    background_rate_total:
+      group:
+        text: "Total rate of background events in {key}"
+    ibd_candidates:
+      group:
+        text: "Total # of IBD candidates in {key}"
     eff:
       group:
         text: "Total detector {index[0]} efficiency"
