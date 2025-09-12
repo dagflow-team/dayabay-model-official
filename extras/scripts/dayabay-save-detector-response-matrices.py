@@ -12,6 +12,7 @@ from __future__ import annotations
 from argparse import Namespace
 
 from dag_modelling.tools.logger import set_verbosity
+from dag_modelling.tools.save_matrices import save_matrices
 from matplotlib import pyplot as plt
 from numpy import ma
 
@@ -88,6 +89,22 @@ def main(opts: Namespace) -> None:
     )
     mappable = ax.matshow(ma.array(matrix_total, mask=(matrix_total == 0.0)), **matshow_kwargs)
     plt.colorbar(mappable)
+
+    output_data = {
+        "matrix_iav": matrix_iav,
+        "matrix_lsnl": matrix_lsnl,
+        "matrix_eres": matrix_eres,
+        "matrix_total": matrix_total,
+    }
+    save_matrices(
+        output_data,
+        (
+            "test.hdf5",
+            "test.npz",
+            "test.root",
+            "test.tsv",
+        )
+    )
 
     plt.show()
 
