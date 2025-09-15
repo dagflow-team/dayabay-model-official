@@ -43,7 +43,7 @@ def main(opts: Namespace) -> None:
     if opts.verbose:
         set_verbosity(opts.verbose)
 
-    model = model_dayabay(parameter_values=opts.par)
+    model = model_dayabay(source_type=opts.source_type, parameter_values=opts.par)
 
     storage = model.storage
 
@@ -137,6 +137,13 @@ if __name__ == "__main__":
 
     parser = ArgumentParser()
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
+    parser.add_argument(
+        "--source-type",
+        choices=("tsv", "hdf5", "root", "npz"),
+        default="default:hdf5",
+        help="Data source type",
+    )
+
     parser.add_argument("-s", "--show", action="store_true", help="show the figures")
 
     output = parser.add_argument_group("output", "control the ouputs")
