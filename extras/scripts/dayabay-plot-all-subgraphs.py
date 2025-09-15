@@ -16,6 +16,7 @@ from __future__ import annotations
 from argparse import Namespace
 from contextlib import suppress
 from pathlib import Path
+
 from dag_modelling.tools.logger import set_verbosity
 
 from dayabay_model_official import model_dayabay
