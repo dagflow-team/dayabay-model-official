@@ -129,17 +129,10 @@ def main(opts: Namespace) -> None:
             "eff_livetime": fig_eff_livetime,
             "rate_accidentals": fig_rate_accidentals,
         }.items():
-            if "{type" not in opts.output:  # }
+            if "{type" not in opts.output:
                 raise RuntimeError("Output format should contain {type} for plot type")
 
-            if "data-a" in model._future:
-                selection = "A"
-            elif "data-b" in model._future:
-                selection = "B"
-            else:
-                selection = "d"
-
-            fname = opts.output.format(type=plot_type, selection=selection, s=selection)
+            fname = opts.output.format(type=plot_type)
             fig.savefig(fname)
             print(f"Save plot: {fname}")
 
