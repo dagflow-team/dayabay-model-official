@@ -94,7 +94,7 @@ latex_substitutions = {
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Save array (graph/histogram) from each output to a root file")
     parser.add_argument("output", help="Export outputs as graphs and histograms to the ROOT file")
 
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")

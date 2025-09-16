@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Plots the contents of all the nodes from `outputs` storage.
+"""Plots the contents of all the outputs (nodes) from `outputs` storage.
 
 Usage:
 - Plot all the nodes
@@ -141,7 +141,7 @@ exact_substitutions = {
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Plot arrays/histograms/graphs from all the outputs with matplotlib")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument(
         "--source-type",

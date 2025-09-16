@@ -98,7 +98,7 @@ latex_substitutions = {
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Save information on parameters into latex files (one file per group)")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument("output", help="print latex tables with parameters")
     parser.add_argument(
