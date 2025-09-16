@@ -1,3 +1,4 @@
+import os
 import subprocess
 
 
@@ -13,7 +14,7 @@ def run_script(script: str, args: list[str]) -> tuple[str, str, int]:
 
 def test_run_dayabay_plot_all_nodes():
     parameter_path = "outputs.background"
-    output_path = "output/kinematics-ibd"
+    output_path = "output/plot-all-nodes-kinematics-ibd"
     node_path = "kinematics.ibd"
     stdout, stderr, code = run_script(
         "./extras/scripts/dayabay-plot-all-nodes.py",
@@ -30,6 +31,7 @@ def test_run_dayabay_plot_all_nodes():
     assert stderr == ""
     assert parameter_path in stdout
     assert f"Write: {output_path}" in stdout
+    assert os.path.exists(output_path)
 
 
 def test_run_dayabay_plot_detector_data():
@@ -53,6 +55,7 @@ def test_run_dayabay_plot_detector_data():
     assert "Push survival_probability.DeltaMSq32=2.5e-3" in stdout
     for type in ["eff", "eff_livetime", "rate_accidentals"]:
         assert f"Save plot: {output.format(type=type)}" in stdout
+        assert os.path.exists(output.format(type=type))
 
 
 def test_run_dayabay_plot_reactor_data():
@@ -76,3 +79,4 @@ def test_run_dayabay_plot_reactor_data():
     assert f"Push {parname}={parvalue}" in stdout
     for type in ["power", "fission_fraction"]:
         assert f"Save plot: {output.format(type=type)}" in stdout
+        assert os.path.exists(output.format(type=type))
