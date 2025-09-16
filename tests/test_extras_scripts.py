@@ -34,6 +34,28 @@ def test_run_dayabay_plot_all_nodes():
     assert os.path.exists(output_path)
 
 
+def test_run_dayabay_print_details():
+    parameter_path = "outputs.background"
+    output_path = "output/print-details-kinematics-ibd"
+    node_path = "kinematics.ibd"
+    stdout, stderr, code = run_script(
+        "./extras/scripts/dayabay-plot-all-nodes.py",
+        [
+            "--print",
+            parameter_path,
+            "--plots",
+            output_path,
+            node_path,
+        ],
+    )
+
+    assert code == 0
+    assert stderr == ""
+    assert parameter_path in stdout
+    assert f"Write: {output_path}" in stdout
+    assert os.path.exists(output_path)
+
+
 def test_run_dayabay_plot_detector_data():
     parname = "survival_probability.DeltaMSq32"
     parvalue = "2.5e-3"
