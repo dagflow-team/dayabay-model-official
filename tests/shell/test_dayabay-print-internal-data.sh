@@ -1,3 +1,3 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 
-extras/scripts/dayabay-print-internal-data.py
+./extras/scripts/dayabay-print-internal-data.py --print parameters.all

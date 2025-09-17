@@ -1,3 +1,3 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 
-extras/scripts/dayabay-plot-all-outputs.py
+./extras/scripts/dayabay-plot-all-outputs.py --plot-all output/model_plots

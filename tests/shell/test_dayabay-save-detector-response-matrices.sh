@@ -1,3 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env bash
 
-extras/scripts/dayabay-save-detector-response-matrices.py
+./extras/scripts/dayabay-save-detector-response-matrices.py --output output/matrix.tsv \
+                                                                     output/matrix.npz \
+                                                                     output/matrix.hdf5 \
+                                                            --plot-output output/matrix{}.pdf
+
