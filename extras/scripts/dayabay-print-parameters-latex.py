@@ -102,9 +102,7 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument("output", help="print latex tables with parameters")
     parser.add_argument(
-        "-s",
         "--source-type",
-        "--source",
         choices=("tsv", "hdf5", "root", "npz"),
         default="default:hdf5",
         help="Data source type",
