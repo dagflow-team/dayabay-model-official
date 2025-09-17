@@ -130,10 +130,10 @@ def test_run_dayabay_save_detector_response_matrices():
         assert os.path.exists(output_plot_path.format(type=type))
 
 
-def test_run_dayabay_save_parameters_to_latex():
+def test_run_dayabay_save_parameters_to_latex_datax():
     output_path = "output/dayabay_parameters_datax.tex"
     stdout, stderr, code = run_script(
-        "./tests/shell/test_dayabay-save-parameters-to-latex.sh",
+        "./tests/shell/test_dayabay-save-parameters-to-latex-datax.sh",
     )
 
     assert code == 0
