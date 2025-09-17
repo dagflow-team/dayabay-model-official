@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""Plots detector related time dependent data.
+
+Usage:
+$ ./extras/scripts/dayabay-plot-detector-data.py -o "output/detector_{type}.pdf"
+"""
+
 from __future__ import annotations
 
 from argparse import Namespace

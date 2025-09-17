@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""Plots reactor related time dependent data.
+
+Usage:
+$ ./extras/scripts/dayabay-plot-reactor-data.py -o "output/reactor_{type}.pdf"
+"""
+
 from __future__ import annotations
 
 from argparse import Namespace
