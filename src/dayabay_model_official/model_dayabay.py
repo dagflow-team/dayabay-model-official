@@ -324,7 +324,7 @@ class model_dayabay:
         # TODO: doc
         cfg_file_mapping = {
             "antineutrino_spectrum_segment_edges": path_parameters
-            / "reactor_antineutrino_spectrum_edges_300keV.py",
+            / "reactor_antineutrino_spectrum_edges.py",
             "parameters.survival_probability": path_parameters / "survival_probability.yaml",
             "parameters.survival_probability_solar": path_parameters
             / "survival_probability_solar.yaml",

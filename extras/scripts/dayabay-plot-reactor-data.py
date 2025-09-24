@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""Plots reactor related time dependent data.
+
+Usage:
+$ ./extras/scripts/dayabay-plot-reactor-data.py -o "output/reactor_{type}.pdf"
+"""
+
 from __future__ import annotations
 
 from argparse import Namespace
@@ -127,7 +133,7 @@ def main(opts: Namespace) -> None:
             "power": fig_power,
             "fission_fraction": fig_ff,
         }.items():
-            if "{type" not in opts.output:  # }
+            if "{type" not in opts.output:
                 raise RuntimeError("Output format should contain {type} for plot type")
 
             fname = opts.output.format(type=plot_type)

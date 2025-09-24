@@ -4,9 +4,9 @@
 
 Usage:
 - Plot all the nodes
-$ ./extras/scripts/dayabay-plot-all-nodes.py --plot-all output/model_plots
+$ ./extras/scripts/dayabay-plot-all-outputs.py --plot-all output/model_plots
 - Plot all the nodes from `background`
-$ ./extras/scripts/dayabay-plot-all-nodes.py --plot output/background_plots background
+$ ./extras/scripts/dayabay-plot-all-outputs.py --plot output/background_plots background
 """
 
 from __future__ import annotations
