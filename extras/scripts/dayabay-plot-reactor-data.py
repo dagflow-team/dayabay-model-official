@@ -37,7 +37,7 @@ def main(opts: Namespace) -> None:
     power_storage = storage["outputs.daily_data.reactor.power"]
     fission_fraction_storage = storage["outputs.daily_data.reactor.fission_fraction"]
 
-    reactors = ["DB1", "DB2", "LA1", "LA2", "LA3", "LA4"]
+    reactors = ["R1", "R2", "R3", "R4", "R5", "R6"]
     reactors = {ad: i for i, ad in enumerate(reactors)}
 
     gridspec_kw = {
