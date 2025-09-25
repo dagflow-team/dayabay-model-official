@@ -18,6 +18,9 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 
 ## Minimal working example
 
+If you want to run examples from `extras/mwe`, clone this repository `git clone https://github.com/dagflow-team/dayabay-model-official` and change position to cloned reposiotry `cd dayabay-model-official`.
+However, you can just copy examples that are listed below and run them where you want after installation of package and several others steps:
+
 1. Install package `pip install dayabay-model-official`
 2. Clone data repository: `git clone https://github.com/dagflow-team/dayabay-data-official`
 3. Create soft link to any data type. For example, to `hdf5`-type: `ln -s dayabay-data-official/hdf5 data/`
