@@ -26,7 +26,7 @@ def main(opts: Namespace) -> None:
     if opts.verbose:
         set_verbosity(opts.verbose)
 
-    model = model_dayabay(source_type=opts.source_type, parameter_values=opts.par)
+    model = model_dayabay(path_data=opts.path_data, parameter_values=opts.par)
     storage = model.storage
 
     graph_accept_index = {
@@ -88,10 +88,9 @@ if __name__ == "__main__":
     parser = ArgumentParser(description="Plot a subgraph with graphviz around each node")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument(
-        "--source-type",
-        choices=("tsv", "hdf5", "root", "npz"),
-        default="default:hdf5",
-        help="Data source type",
+        "--path-data",
+        default=None,
+        help="Path to data",
     )
 
     dot = parser.add_argument_group("graphviz", "plotting graphs")

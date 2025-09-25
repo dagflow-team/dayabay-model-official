@@ -19,10 +19,9 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-  # "dag-modelling>=0.14",
-  "dag-modelling@git+https://git.jinr.ru/dagflow-team/dag-modelling.git@chore/updates", # v0.14 development
+  "dag-modelling>=0.14.0",
   "dgm-fit>=0.2",
-  "dgm-reactor-neutrino>=0.2",
+  "dgm-reactor-neutrino>=0.2.1",
   "more-itertools",
 ]
 

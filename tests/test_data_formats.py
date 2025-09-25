@@ -22,11 +22,9 @@ set_verbosity(1)
 def test_dayabay_v0(source_type: str):
     data_location = "dayabay-data-all/dayabay-v1a"
     model_ref = model_dayabay(
-        source_type=source_type_reference,  # pyright: ignore [reportArgumentType]
         path_data=f"{data_location}/{source_type_reference}",
     )
     model = model_dayabay(
-        source_type=source_type,  # pyright: ignore [reportArgumentType]
         path_data=f"{data_location}/{source_type}",
     )
 
