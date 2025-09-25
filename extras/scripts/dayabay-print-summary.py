@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Prints Daya Bay summary data to stdout.
+"""Prints Daya Bay summary data to stdout or to output files.
 
 Yields 4 tables: for each of 3 data taking periods and a total one. The results correspond to the
 Table I from Physical Review Letters 130, 161802 (2023). The output is transposed so the column when

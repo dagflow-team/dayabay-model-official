@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Demonstrate how to access some of the Daya Bay data:
+"""Demonstrate how to access some of the Daya Bay data from the model:
 - Parameter (sin²2θ₁₃) and its value.
 - Expected IBD events ad AD11 (EH1AD1).
 - Statistic (combined Neyman-Pearson χ²) versus Asimov dataset.
