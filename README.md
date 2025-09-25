@@ -50,6 +50,7 @@ model = model_dayabay(path_data="dayabay-model-official/npz")
 print(model.storage["outputs.statistic.full.pull.chi2p"].data)
 ```
 Example can be executed: `python extras/mwe/run-custom-data-path.py`
+
 7. If you want to switch between Asimonv and observed data, you need to switch input in the next way
 ```python
 from dayabay_model_official import model_dayabay
