@@ -2,9 +2,11 @@ stages:
   - tests
 
 tests:
-  image: 'python:3.11.7-bullseye'
+  image: "python:3.11.7-bullseye"
   stage: tests
 
+  variables:
+    TEST_DATA_NAME: "dayabay-v1a"
   script:
     - apt-get update
     - apt-get -y install libgraphviz-dev graphviz git-lfs
@@ -16,7 +18,7 @@ tests:
     - pip install -e ".[test]"
     - ipython kernel install --name "python3" --user
     - git clone --depth=1 https://gitlab-ci-token:${CI_JOB_TOKEN}@git.jinr.ru/dag-computing/dayabay-data-all.git
-    - ln -s dayabay-data-all/dayabay-v1/hdf5 data
+    - ln -s dayabay-data-all/${TEST_DATA_NAME}/hdf5 data
     - coverage run --source=. -m pytest
     - coverage report
     - coverage xml

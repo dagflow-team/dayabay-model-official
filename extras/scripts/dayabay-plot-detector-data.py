@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""Plots detector related time dependent data.
+
+Usage:
+$ ./extras/scripts/dayabay-plot-detector-data.py -o "output/detector_{type}.pdf"
+"""
+
 from __future__ import annotations
 
 from argparse import Namespace
@@ -23,10 +29,7 @@ def main(opts: Namespace) -> None:
     if opts.verbose:
         set_verbosity(opts.verbose)
 
-    model = model_dayabay(
-        source_type=opts.source_type,
-        parameter_values=opts.par,
-    )
+    model = model_dayabay(path_data=opts.path_data, parameter_values=opts.par)
 
     storage = model.storage
 
@@ -132,17 +135,10 @@ def main(opts: Namespace) -> None:
             "eff_livetime": fig_eff_livetime,
             "rate_accidentals": fig_rate_accidentals,
         }.items():
-            if "{type" not in opts.output:  # }
+            if "{type" not in opts.output:
                 raise RuntimeError("Output format should contain {type} for plot type")
 
-            if "data-a" in model._future:
-                selection = "A"
-            elif "data-b" in model._future:
-                selection = "B"
-            else:
-                selection = "d"
-
-            fname = opts.output.format(type=plot_type, selection=selection, s=selection)
+            fname = opts.output.format(type=plot_type)
             fig.savefig(fname)
             print(f"Save plot: {fname}")
 
@@ -153,14 +149,12 @@ def main(opts: Namespace) -> None:
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Plot time dependent detector data")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument(
-        "--source-type",
-        "--source",
-        choices=("tsv", "hdf5", "root", "npz"),
-        default="hdf5",
-        help="Data source type",
+        "--path-data",
+        default=None,
+        help="Path to data",
     )
 
     pars = parser.add_argument_group("pars", "setup pars")
