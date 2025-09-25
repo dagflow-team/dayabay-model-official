@@ -1,5 +1,11 @@
 #!/usr/bin/env python
 
+"""Plots reactor related time dependent data.
+
+Usage:
+$ ./extras/scripts/dayabay-plot-reactor-data.py -o "output/reactor_{type}.pdf"
+"""
+
 from __future__ import annotations
 
 from argparse import Namespace
@@ -23,10 +29,7 @@ def main(opts: Namespace) -> None:
     if opts.verbose:
         set_verbosity(opts.verbose)
 
-    model = model_dayabay(
-        source_type=opts.source_type,
-        parameter_values=opts.par,
-    )
+    model = model_dayabay(path_data=opts.path_data, parameter_values=opts.par)
 
     storage = model.storage
 
@@ -34,7 +37,7 @@ def main(opts: Namespace) -> None:
     power_storage = storage["outputs.daily_data.reactor.power"]
     fission_fraction_storage = storage["outputs.daily_data.reactor.fission_fraction"]
 
-    reactors = ["DB1", "DB2", "LA1", "LA2", "LA3", "LA4"]
+    reactors = ["R1", "R2", "R3", "R4", "R5", "R6"]
     reactors = {ad: i for i, ad in enumerate(reactors)}
 
     gridspec_kw = {
@@ -130,7 +133,7 @@ def main(opts: Namespace) -> None:
             "power": fig_power,
             "fission_fraction": fig_ff,
         }.items():
-            if "{type" not in opts.output:  # }
+            if "{type" not in opts.output:
                 raise RuntimeError("Output format should contain {type} for plot type")
 
             fname = opts.output.format(type=plot_type)
@@ -144,14 +147,12 @@ def main(opts: Namespace) -> None:
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Plot time dependent reactor data")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument(
-        "--source-type",
-        "--source",
-        choices=("tsv", "hdf5", "root", "npz"),
-        default="default:hdf5",
-        help="Data source type",
+        "--path-data",
+        default=None,
+        help="Path to data",
     )
 
     pars = parser.add_argument_group("pars", "setup pars")

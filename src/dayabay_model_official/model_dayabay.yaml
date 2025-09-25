@@ -413,10 +413,6 @@ background:
       group:
         text: "# of ⁹Li/⁸He background events in {index[0]} during {index[1]}\\nbefore nuisance"
         unit: "#"
-    muon_decay:
-      group:
-        text: "# of μ decay background events in {index[0]} during {index[1]}\\nbefore nuisance"
-        unit: "#"
   count:
     accidentals:
       group:
@@ -437,10 +433,6 @@ background:
     lithium_helium:
       group:
         text: "# of ⁹Li/⁸He background events in {index[0]} during {index[1]}"
-        unit: "#"
-    muon_decay:
-      group:
-        text: "# of μ decay background events in {index[0]} during {index[1]}"
         unit: "#"
   spectrum:
     accidentals:
@@ -473,12 +465,6 @@ background:
         axis: "$N$"
         unit: "#"
         plotoptions: {yscale: log}
-    muon_decay:
-      group:
-        text: "# of μ decay background events in {index[0]} during {index[1]}"
-        axis: "$N$"
-        unit: "#"
-        plotoptions: {yscale: log}
   spectrum_shape:
     accidentals:
       group:
@@ -499,10 +485,6 @@ background:
     lithium_helium:
       group:
         text: "Spectrum shape of ⁹Li/⁸He background events in {key}"
-        axis: "$S$"
-    muon_decay:
-      group:
-        text: "Spectrum shape of μ decay background events in {key}"
         axis: "$S$"
 survival_probability:
   group:
@@ -1214,8 +1196,6 @@ statistic:
             text: "χ² nuisance term for parameters for background rate\\nfast neutrons"
           lithium_helium:
             text: "χ² nuisance term for parameters for background rate\\n⁹Li/⁸He"
-          muon_decay:
-            text: "χ² nuisance term for parameters for background rate\\nμ decay"
 summary:
   total:
     background_count:
@@ -1224,9 +1204,30 @@ summary:
     background_rate_s:
       group:
         text: "Total rate of {index[0]} background events in {index[1]}"
+        unit: "s⁻¹"
     background_rate:
       group:
         text: "Total rate {index[0]} background events in {index[1]}"
+        unit: "day⁻¹"
+    background_rate_total:
+      group:
+        text: "Total rate of background events in {key}"
+        unit: "day⁻¹"
+    ibd_candidates:
+      group:
+        text: "Total # of IBD candidates in {key}"
+    rate_ibd_candidates_s:
+      group:
+        text: "Rate of IBD candidates in {key}"
+        unit: "s⁻¹"
+    rate_ibd_candidates:
+      group:
+        text: "Rate of IBD candidates in {key}"
+        unit: "day⁻¹"
+    rate_ibd:
+      group:
+        text: "Rate of IBD events in {key}"
+        unit: "day⁻¹"
     eff:
       group:
         text: "Total detector {index[0]} efficiency"
@@ -1245,9 +1246,15 @@ summary:
     background_rate_s:
       group:
         text: "Total rate of {index[0]} background events in {index[2]} during {index[1]}"
+        unit: "s⁻¹"
     background_rate:
       group:
         text: "Total rate {index[0]} background events in {index[2]} during {index[1]}"
+        unit: "day⁻¹"
+    background_rate_total:
+      group:
+        text: "Total rate of background events in {index[1]} during {index[0]}"
+        unit: "day⁻¹"
     eff:
       group:
         text: "Total detector {index[1]} efficiency during {index[0]}"
@@ -1259,4 +1266,18 @@ summary:
       group:
         text: "Total detector {index[1]} wall clock livetime during {index[0]}"
         unit: "s"
-
+    ibd_candidates:
+      group:
+        text: "Total # of IBD candidates in {index[1]} during {index[0]}"
+    rate_ibd_candidates_s:
+      group:
+        text: "Rate of IBD candidates in {index[1]} during {index[0]}"
+        unit: "s⁻¹"
+    rate_ibd_candidates:
+      group:
+        text: "Rate of IBD candidates in {index[1]} during {index[0]}"
+        unit: "day⁻¹"
+    rate_ibd:
+      group:
+        text: "Rate of IBD events in {index[1]} during {index[0]}"
+        unit: "day⁻¹"

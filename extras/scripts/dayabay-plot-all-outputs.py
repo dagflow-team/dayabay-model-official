@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+"""Plots the contents of all the outputs (nodes) from `outputs` storage.
+
+Usage:
+- Plot all the nodes
+$ ./extras/scripts/dayabay-plot-all-outputs.py --plot-all output/model_plots
+- Plot all the nodes from `background`
+$ ./extras/scripts/dayabay-plot-all-outputs.py --plot output/background_plots background
+"""
+
 from __future__ import annotations
 
 from argparse import Namespace
@@ -27,26 +36,9 @@ def main(opts: Namespace) -> None:
     if opts.verbose:
         set_verbosity(opts.verbose)
 
-    model = model_dayabay(
-        source_type=opts.source_type,
-        parameter_values=opts.par,
-    )
+    model = model_dayabay(path_data=opts.path_data, parameter_values=opts.par)
 
     storage = model.storage
-
-    if opts.print_all:
-        print(storage.to_table(truncate="auto", df_kwargs={"columns": opts.print_columns}))
-    for sources in opts.print:
-        for source in sources:
-            print(
-                storage(source).to_table(
-                    truncate="auto",
-                    df_kwargs={
-                        "columns": opts.print_columns,
-                        "parent_key": source,
-                    },
-                )
-            )
 
     plot_overlay_priority = [
         model.index["isotope"],
@@ -63,11 +55,11 @@ def main(opts: Namespace) -> None:
             "metadata": {"CreationDate": None},
         },
     }
-    if opts.plots_all:
-        storage("outputs").plot(folder=opts.plots_all, minimal_data_size=10, **plot_kwargs)
+    if opts.plot_all:
+        storage("outputs").plot(folder=opts.plot_all, minimal_data_size=10, **plot_kwargs)
 
-    if opts.plots:
-        folder, *sources = opts.plots
+    if opts.plot:
+        folder, *sources = opts.plot
         for source in sources:
             storage["outputs"](source).plot(
                 folder=f"{folder}/{source.replace('.', '/')}",
@@ -149,30 +141,22 @@ exact_substitutions = {
 if __name__ == "__main__":
     from argparse import ArgumentParser
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(description="Plot arrays/histograms/graphs from all the outputs with matplotlib")
     parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
     parser.add_argument(
-        "-s",
-        "--source-type",
-        "--source",
-        choices=("tsv", "hdf5", "root", "npz"),
-        default="default:hdf5",
-        help="Data source type",
+        "--path-data",
+        default=None,
+        help="Path to data",
     )
 
-    plot = parser.add_argument_group("plot", "plotting related options")
-    plot.add_argument("--plots-all", help="plot all the nodes to the folder", metavar="folder")
+    plot = parser.add_mutually_exclusive_group(required=True)
+    plot.add_argument("--plot-all", help="plot all the nodes to the folder", metavar="folder")
     plot.add_argument(
-        "--plots",
+        "--plot",
         nargs="+",
         help="plot the nodes in storages",
         metavar=("folder", "storage"),
     )
-
-    storage = parser.add_argument_group("storage", "storage related options")
-    storage.add_argument("-P", "--print-all", action="store_true", help="print all")
-    storage.add_argument("-p", "--print", action="append", nargs="+", default=[], help="print all")
-    storage.add_argument("--print-columns", "--pc", default=None, nargs="+", help="Print columns")
 
     pars = parser.add_argument_group("pars", "setup pars")
     pars.add_argument("--par", nargs=2, action="append", default=[], help="set parameter value")

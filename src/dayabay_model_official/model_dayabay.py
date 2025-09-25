@@ -53,7 +53,7 @@ class model_dayabay:
         Graph instance.
     index : dict[str, tuple[str, ...]]
         Dictionary with all possible names for replicated items, e.g.
-        "detector": ("AD11", "AD12", ...); reactor: ("DB1", ...); ...
+        "detector": ("AD11", "AD12", ...); reactor: ("R1", ...); ...
         index is setup within the model.
     combinations : dict[str, tuple[tuple[str, ...], ...]]
         Lists of all combinations of values of 1 and more indices,
@@ -89,8 +89,6 @@ class model_dayabay:
             - "poisson" - Poisson fluctuations.
     path_data : Path
         Path to the data.
-    source_type : str, default="npz"
-        Type of the data to read ("tsv", "hdf5", "root" or "npz").
 
     Technical attributes
     --------------------
@@ -116,12 +114,12 @@ class model_dayabay:
         "index",
         "combinations",
         "_path_data",
+        "_leading_mass_splitting_3l_name",
         "spectrum_correction_interpolation_mode",
         "spectrum_correction_location",
         "concatenation_mode",
         "monte_carlo_mode",
         "_source_type",
-        "_dataset",
         "_strict",
         "_close",
         "_covariance_matrix",
@@ -134,12 +132,12 @@ class model_dayabay:
     index: dict[str, tuple[str, ...]]
     combinations: dict[str, tuple[tuple[str, ...], ...]]
     _path_data: Path
+    _leading_mass_splitting_3l_name: Literal["DeltaMSq32", "DeltaMSq31"]
     spectrum_correction_interpolation_mode: Literal["linear", "exponential"]
     spectrum_correction_location: Literal["before-integration", "after-integration"]
     concatenation_mode: Literal["detector", "detector_period"]
     monte_carlo_mode: Literal["asimov", "normal-stats", "poisson"]
     _source_type: Literal["tsv", "hdf5", "root", "npz", "default:hdf5"]
-    _dataset: Literal["a", "b"]  # todo: doc
     _strict: bool
     _close: bool
     _random_generator: Generator
@@ -149,11 +147,11 @@ class model_dayabay:
     def __init__(
         self,
         *,
-        source_type: Literal["tsv", "hdf5", "root", "npz", "default:hdf5"] = "default:hdf5",
-        dataset: Literal["a", "b"] = "b",
         strict: bool = True,
         close: bool = True,
         override_indices: Mapping[str, Sequence[str]] = {},
+        override_cfg_files: Mapping[str, str] = {},
+        leading_mass_splitting_3l_name: Literal["DeltaMSq32", "DeltaMSq31"] = "DeltaMSq32",
         spectrum_correction_interpolation_mode: Literal["linear", "exponential"] = "exponential",
         spectrum_correction_location: Literal[
             "before-integration", "after-integration"
@@ -180,10 +178,6 @@ class model_dayabay:
         self._strict = strict
         self._close = close
 
-        assert source_type in {"tsv", "hdf5", "root", "npz", "default:hdf5"}
-        assert dataset in {"b"}
-        # assert dataset in {"a", "b"}
-
         assert spectrum_correction_interpolation_mode in {"linear", "exponential"}
         assert spectrum_correction_location in {
             "before-integration",
@@ -192,23 +186,21 @@ class model_dayabay:
         assert monte_carlo_mode in {"asimov", "normal-stats", "poisson"}
         assert concatenation_mode in {"detector", "detector_period"}
 
-        if source_type == "default:hdf5":
-            self._source_type = "hdf5"
-        else:
-            self._source_type = source_type
-
-        match (path_data, source_type):
-            case str() | Path(), str():
+        match path_data:
+            case str() | Path():
                 self._path_data = Path(path_data)
-            case None, str():
-                self._path_data = Path("data")
-            case _, _:
+            case None:
+                self._path_data = Path("data/")
+            case _:
                 raise RuntimeError(
-                    f"Unsupported combination of path/source_type options: {path_data}/{source_type}"
+                    f"Unsupported path option: {path_data}"
                 )
 
+        from .tools import auto_detect_source_type
+        self._source_type = auto_detect_source_type(self._path_data)
+
         self.storage = NodeStorage()
-        self._dataset = dataset
+        self._leading_mass_splitting_3l_name = leading_mass_splitting_3l_name
         self.spectrum_correction_interpolation_mode = spectrum_correction_interpolation_mode
         self.spectrum_correction_location = spectrum_correction_location
         self.concatenation_mode = concatenation_mode
@@ -216,7 +208,6 @@ class model_dayabay:
         self._random_generator = self._create_random_generator(seed)
 
         logger.log(INFO, f"Model version: {type(self).__name__}")
-        logger.log(INFO, f"Dataset: {self._dataset}")
         logger.log(INFO, f"Source type: {self._source_type}")
         logger.log(INFO, f"Data path: {self.path_data!s}")
         logger.log(INFO, f"Concatenation mode: {self.concatenation_mode}")
@@ -226,7 +217,7 @@ class model_dayabay:
         )
         logger.log(
             INFO,
-            f"Spectrum location: {self.spectrum_correction_location}",
+            f"Spectrum correction location: {self.spectrum_correction_location.replace('-', ' ')}",
         )
         assert self.spectrum_correction_interpolation_mode in {"linear", "exponential"}
         assert self.spectrum_correction_location in {
@@ -238,10 +229,86 @@ class model_dayabay:
         self.combinations = {}
 
         override_indices = {k: tuple(v) for k, v in override_indices.items()}
-        self.build(override_indices)
+
+        cfg_file_mapping = self._build_cfg_file_mapping(override_cfg_files)
+
+        self.build(cfg_file_mapping, override_indices)
 
         if parameter_values:
             self.set_parameters(parameter_values)
+
+    def _build_cfg_file_mapping(self, override_cfg_files: Mapping[str, str]) -> dict[str, Path]:
+        path_data = self.path_data
+        path_parameters = path_data / "parameters"
+
+        # Dataset items
+        cfg_file_mapping = {
+            "antineutrino_spectrum_segment_edges": path_parameters
+            / "reactor_antineutrino_spectrum_edges.py",
+            "parameters.survival_probability": path_parameters / "survival_probability.yaml",
+            "parameters.survival_probability_solar": path_parameters
+            / "survival_probability_solar.yaml",
+            "parameters.survival_probability_constants": path_parameters
+            / "survival_probability_constants.yaml",
+            "parameters.pdg_constants": path_parameters / "pdg2024.yaml",
+            "parameters.ibd_constants": path_parameters / "ibd_constants.yaml",
+            "parameters.conversion_thermal_power": path_parameters / "conversion_thermal_power.py",
+            "parameters.conversion_survival_probability": path_parameters
+            / "conversion_survival_probability_argument.py",
+            "parameters.baselines": path_parameters / "baselines.yaml",
+            "parameters.detector_normalization": path_parameters / "detector_normalization.yaml",
+            "parameters.detector_efficiency": path_parameters / "detector_efficiency.yaml",
+            "parameters.detector_n_protons_nominal": path_parameters
+            / "detector_n_protons_nominal.yaml",
+            "parameters.detector_n_protons_correction": path_parameters
+            / "detector_n_protons_correction.yaml",
+            "parameters.detector_eres": path_parameters / "detector_eres.yaml",
+            "parameters.detector_lsnl": path_parameters / "detector_lsnl.yaml",
+            "parameters.detector_iav_offdiag_scale": path_parameters
+            / "detector_iav_offdiag_scale.yaml",
+            "parameters.detector_relative": path_parameters / "detector_relative.yaml",
+            "parameters.reactor_thermal_power_nominal": path_parameters
+            / "reactor_thermal_power_nominal.yaml",
+            "parameters.reactor_energy_per_fission": path_parameters
+            / "reactor_energy_per_fission.yaml",
+            "parameters.reactor_snf": path_parameters / "reactor_snf.yaml",
+            "parameters.reactor_nonequilibrium_correction": path_parameters
+            / "reactor_nonequilibrium_correction.yaml",
+            "parameters.reactor_snf_fission_fractions": path_parameters
+            / "reactor_snf_fission_fractions.yaml",
+            "parameters.reactor_fission_fraction_scale": path_parameters
+            / "reactor_fission_fraction_scale.yaml",
+            "parameters.background_rate_scale_accidentals": path_parameters
+            / "background_rate_scale_accidentals.yaml",
+            "parameters.background_rates_uncorrelated": path_parameters
+            / f"background_rates_uncorrelated.yaml",
+            "parameters.background_rates_correlated": path_parameters
+            / f"background_rates_correlated.yaml",
+            "parameters.background_rate_uncertainty_scale_amc": path_parameters
+            / "background_rate_uncertainty_scale_amc.yaml",
+            "parameters.background_rate_uncertainty_scale_site": path_parameters
+            / f"background_rate_uncertainty_scale_site.yaml",
+            "reactor_antineutrino_spectra": path_data
+            / f"reactor_antineutrino_spectra_hm.{self.source_type}",
+            "reactor_antineutrino_spectra_uncertainties": path_data
+            / f"reactor_antineutrino_spectra_hm_uncertainties.{self.source_type}",
+            "nonequilibrium_correction": path_data
+            / f"nonequilibrium_correction.{self.source_type}",
+            "snf_correction": path_data / f"snf_correction.{self.source_type}",
+            "daily_detector_data": path_data
+            / f"dayabay_dataset/dayabay_daily_detector_data.{self.source_type}",
+            "daily_reactor_data": path_data / f"reactors_operation_data.{self.source_type}",
+            "iav_matrix": path_data / f"detector_iav_matrix.{self.source_type}",
+            "lsnl_curves": path_data / f"detector_lsnl_curves.{self.source_type}",
+            "background_spectra": path_data / "dayabay_dataset/dayabay_background_spectra_{}."
+            f"{self.source_type}",
+            "dataset": path_data / "dayabay_dataset/dayabay_ibd_spectra_{}."f"{self.source_type}",
+        }
+
+        for cfg_name, path in override_cfg_files.items():
+            cfg_file_mapping.update({cfg_name: Path(path)})
+
+        return cfg_file_mapping
 
     @property
     def source_type(self) -> Literal["tsv", "hdf5", "npz", "root"]:
@@ -252,14 +319,10 @@ class model_dayabay:
         return self._path_data
 
     @property
-    def dataset(self) -> Literal["a", "b"]:
-        return self._dataset
-
-    @property
     def nbins(self) -> int:
         return self.storage["outputs.eventscount.final.concatenated.selected"].data.shape[0]
 
-    def build(self, override_indices: dict[str, tuple[str, ...]] = {}):
+    def build(self, cfg_file_mapping: dict[str, Path], override_indices: dict[str, tuple[str, ...]] = {}):
         """Actually build the model.
 
         Steps:
@@ -329,78 +392,6 @@ class model_dayabay:
 
         # Initialize the storage and paths
         storage = self.storage
-        path_data = self.path_data
-        path_parameters = path_data / "parameters"
-
-        # Dataset items
-        path_dataset = f"dayabay_dataset_{self.dataset}"
-
-        # TODO: doc
-        cfg_file_mapping = {
-            "antineutrino_spectrum_segment_edges": path_parameters
-            / "reactor_antineutrino_spectrum_edges_300keV.py",
-            "parameters.survival_probability": path_parameters / "survival_probability.yaml",
-            "parameters.survival_probability_solar": path_parameters
-            / "survival_probability_solar.yaml",
-            "parameters.survival_probability_constants": path_parameters
-            / "survival_probability_constants.yaml",
-            "parameters.pdg_constants": path_parameters / "pdg2024.yaml",
-            "parameters.ibd_constants": path_parameters / "ibd_constants.yaml",
-            "parameters.conversion_thermal_power": path_parameters / "conversion_thermal_power.py",
-            "parameters.conversion_survival_probability": path_parameters
-            / "conversion_survival_probability_argument.py",
-            "parameters.baselines": path_parameters / "baselines.yaml",
-            "parameters.detector_normalization": path_parameters / "detector_normalization.yaml",
-            "parameters.detector_efficiency": path_parameters / "detector_efficiency.yaml",
-            "parameters.detector_n_protons_nominal": path_parameters
-            / (
-                "detector_n_protons_nominal.yaml"
-                if self.dataset != "b"
-                else "detector_n_protons_nominal_dataset_b.yaml"
-            ),
-            "parameters.detector_n_protons_correction": path_parameters
-            / "detector_n_protons_correction.yaml",
-            "parameters.detector_eres": path_parameters / "detector_eres.yaml",
-            "parameters.detector_lsnl": path_parameters / "detector_lsnl.yaml",
-            "parameters.detector_iav_offdiag_scale": path_parameters
-            / "detector_iav_offdiag_scale.yaml",
-            "parameters.detector_relative": path_parameters / "detector_relative.yaml",
-            "parameters.reactor_thermal_power_nominal": path_parameters
-            / "reactor_thermal_power_nominal.yaml",
-            "parameters.reactor_energy_per_fission": path_parameters
-            / "reactor_energy_per_fission.yaml",
-            "parameters.reactor_snf": path_parameters / "reactor_snf.yaml",
-            "parameters.reactor_nonequilibrium_correction": path_parameters
-            / "reactor_nonequilibrium_correction.yaml",
-            "parameters.reactor_snf_fission_fractions": path_parameters
-            / "reactor_snf_fission_fractions.yaml",
-            "parameters.reactor_fission_fraction_scale": path_parameters
-            / "reactor_fission_fraction_scale.yaml",
-            "parameters.background_rate_scale_accidentals": path_parameters
-            / "background_rate_scale_accidentals.yaml",
-            "parameters.background_rates_uncorrelated_dataset": path_parameters
-            / f"background_rates_uncorrelated_dataset_{self.dataset}.yaml",
-            "parameters.background_rates_correlated_dataset": path_parameters
-            / f"background_rates_correlated_dataset_{self.dataset}.yaml",
-            "parameters.background_rate_uncertainty_scale_amc": path_parameters
-            / "background_rate_uncertainty_scale_amc.yaml",
-            "parameters.background_rate_uncertainty_scale_site_dataset": path_parameters
-            / f"background_rate_uncertainty_scale_site_dataset_{self.dataset}.yaml",
-            "reactor_antineutrino_spectra": path_data
-            / f"reactor_antineutrino_spectra_hm.{self.source_type}",
-            "reactor_antineutrino_spectra_uncertainties": path_data
-            / f"reactor_antineutrino_spectra_hm_uncertainties.{self.source_type}",
-            "nonequilibrium_correction": path_data
-            / f"nonequilibrium_correction.{self.source_type}",
-            "snf_correction": path_data / f"snf_correction.{self.source_type}",
-            "daily_detector_data": path_data
-            / f"{path_dataset}/{path_dataset}_daily_detector_data.{self.source_type}",
-            "daily_reactor_data": path_data / f"reactors_operation_data_28days.{self.source_type}",
-            "iav_matrix": path_data / f"detector_iav_matrix.{self.source_type}",
-            "lsnl_curves": path_data / f"detector_lsnl_curves.{self.source_type}",
-            "background_spectra": path_data
-            / f"{path_dataset}/{path_dataset}_background_spectra_{{}}.{self.source_type}",
-        }
 
         # Read Eν edges for the parametrization of free antineutrino spectrum model
         # Loads the python file and returns variable "edges", which should be defined
@@ -445,7 +436,7 @@ class model_dayabay:
             # Source of background events:
             #     - accidentals: accidental coincidences
             #     - lithium_helium: ⁹Li and ⁸He related events
-            #     - fast_neutrons: fast neutrons (and muon_decay background for dataset B)
+            #     - fast_neutrons: fast neutrons, includes also and muon decay background
             #     - amc: ²⁴¹Am¹³C calibration source related background
             #     - alpha_neutron: ¹³C(α,n)¹⁶O background
             "background": (
@@ -472,7 +463,7 @@ class model_dayabay:
             # applied
             "isotope_neq": ("U235", "Pu239", "Pu241"),
             # Nuclear reactors
-            "reactor": ("DB1", "DB2", "LA1", "LA2", "LA3", "LA4"),
+            "reactor": ("R1", "R2", "R3", "R4", "R5", "R6"),
             # Sources of antineutrinos:
             #     - "nu_main": for antineutrinos from reactor cores with no
             #                  Non-Equilibrium correction applied
@@ -493,13 +484,6 @@ class model_dayabay:
             "spec": tuple(f"spec_scale_{i:02d}" for i in range(len(antineutrino_model_edges))),
         }
 
-        if self.dataset == "a":
-            index["background"] = index["background"] + ("muon_decay",)
-            index["background_stable"] = index["background_stable"] + ("muon_decay",)
-            index["background_site_correlated"] = index["background_site_correlated"] + (
-                "muon_decay",
-            )
-
         # Define isotope names in lower case
         index["isotope_lower"] = tuple(isotope.lower() for isotope in index["isotope"])
 
@@ -515,17 +499,11 @@ class model_dayabay:
         # Collection combinations between 2 and more indices. Ensure some combinations,
         # e.g. detectors not present at certain periods, are excluded.
         # For example, combinations["reactor.detector"] contains:
-        # (("DB1", "AD11"), ("DB1", "AD12"), ..., ("DB2", "AD11"), ...)
+        # (("R1", "AD11"), ("R1", "AD12"), ..., ("R2", "AD11"), ...)
         #
         # The dictionary combinations is one of the main elements to loop over and match
         # parts of the computational graph
         inactive_detectors = ({"6AD", "AD22"}, {"6AD", "AD34"}, {"7AD", "AD11"})
-        inactive_backgrounds = (
-            {"6AD", "muon_decay"},
-            {"8AD", "muon_decay"},
-            {"AD11", "muon_decay"},
-        )  # TODO: doc
-        inactive_combinations = inactive_detectors + inactive_backgrounds
         required_combinations = tuple(index.keys()) + (
             "reactor.detector",
             "reactor.isotope",
@@ -555,7 +533,7 @@ class model_dayabay:
             combitems = combname.split(".")
             items = []
             for it in product(*(index[item] for item in combitems)):
-                if any(inact.issubset(it) for inact in inactive_combinations):
+                if any(inact.issubset(it) for inact in inactive_detectors):
                     continue
                 items.append(it)
             combinations[combname] = tuple(items)
@@ -831,11 +809,11 @@ class model_dayabay:
             )
             load_parameters(
                 path="background.rate",
-                load=cfg_file_mapping["parameters.background_rates_uncorrelated_dataset"],
+                load=cfg_file_mapping["parameters.background_rates_uncorrelated"],
             )
             load_parameters(
                 path="background.rate",
-                load=cfg_file_mapping["parameters.background_rates_correlated_dataset"],
+                load=cfg_file_mapping["parameters.background_rates_correlated"],
                 sigma_visible=True,
             )
             load_parameters(
@@ -844,9 +822,8 @@ class model_dayabay:
             )
             load_parameters(
                 path="background.uncertainty_scale_by_site",
-                load=cfg_file_mapping["parameters.background_rate_uncertainty_scale_site_dataset"],
+                load=cfg_file_mapping["parameters.background_rate_uncertainty_scale_site"],
                 replicate=combinations["site.period"],
-                ignore_keys=inactive_backgrounds,
             )
 
             # Additionally a few constants are provided.
@@ -895,7 +872,7 @@ class model_dayabay:
             # In this section the actual parts of the calculation are created as nodes.
             # First of all the binning is defined for the histograms.
             # - internal binning for the integration: 240 bins of 50 keV from 0 to 241.
-            # - final binning for the statistical analysis: 20 keV from 1.0 MeV to 2 MeV
+            # - final binning for the statistical analysis: 20 keV from 1.3 MeV to 2 MeV
             #   with two wide bins below from 0.7 MeV and above up to 12 MeV.
             # - cosθ (positron angle) edges [-1,1] are defined explicitly for the
             #   integration of the Inverse Beta Decay (IBD) cross section.
@@ -1127,26 +1104,27 @@ class model_dayabay:
             # MeV, while the unit for distance may be chosen between "m" and "km".
             NueSurvivalProbability.replicate(
                 name="survival_probability",
+                leading_mass_splitting_3l_name=self._leading_mass_splitting_3l_name,
                 distance_unit="m",
                 replicate_outputs=combinations["reactor.detector"],
                 surprobArgConversion=True,
             )
             # If created in the verbose mode one can see, that the following items are
             # created:
-            # - nodes.survival_probability.DB1.AD11
-            # - nodes.survival_probability.DB1.AD12
+            # - nodes.survival_probability.R1.AD11
+            # - nodes.survival_probability.R1.AD12
             # - ...
-            # - inputs.survival_probability.enu.DB1.AD11
-            # - inputs.survival_probability.enu.DB1.AD12
+            # - inputs.survival_probability.enu.R1.AD11
+            # - inputs.survival_probability.enu.R1.AD12
             # - ...
-            # - inputs.survival_probability.L.DB1.AD11
-            # - inputs.survival_probability.L.DB1.AD12
+            # - inputs.survival_probability.L.R1.AD11
+            # - inputs.survival_probability.L.R1.AD12
             # - ...
-            # - inputs.survival_probability.surprobArgConversion.DB1.AD11
-            # - inputs.survival_probability.surprobArgConversion.DB1.AD12
+            # - inputs.survival_probability.surprobArgConversion.R1.AD11
+            # - inputs.survival_probability.surprobArgConversion.R1.AD12
             # - ...
-            # - outputs.survival_probability.DB1.AD11
-            # - outputs.survival_probability.DB1.AD12
+            # - outputs.survival_probability.R1.AD11
+            # - outputs.survival_probability.R1.AD12
             # - ...
             # On one hand each node with its inputs and outputs may be accessed via
             # "nodes.survival_probability.<reactor>.<detector>" address. On the other hand all the
@@ -1159,10 +1137,10 @@ class model_dayabay:
             # Connect the corresponding baselines:
             parameters.get_dict("constant.baseline") >> inputs.get_dict("survival_probability.L")
             # The matching is done based on the index with order being ignored. Thus
-            # baselines stored as "DB1.AD11" or "AD11.DB1" both may be connected to the
-            # input "DB1.AD11". Moreover, if the left part has fewer indices, the
-            # connection will be broad casted, e.g. "DB1" on the left will be connected
-            # to all the indices on the right, containing "DB1".
+            # baselines stored as "R1.AD11" or "AD11.R1" both may be connected to the
+            # input "R1.AD11". Moreover, if the left part has fewer indices, the
+            # connection will be broad casted, e.g. "R1" on the left will be connected
+            # to all the indices on the right, containing "R1".
             #
             # Provide a conversion constant to convert the argument of sin²(...Δm²L/E)
             # from chosen units to natural ones.
@@ -1189,7 +1167,7 @@ class model_dayabay:
             # items with names "U235", "U238", "Pu239" and "Pu241" (from
             # index["isotope"]) as follows:
             # - hdf5: open with filename, request (X,Y) dataset by name.
-            # - npz: open with filename, get (X,Y)  array from a dictionary by name.
+            # - npz: open with filename, get (X,Y) array from a dictionary by name.
             # - root: open with filename, get TH1D object by name. Build graph by taking
             #         **left edges** of the bins and their heights. `uproot` is used to
             #         load ROOT files by default. If `$ROOTSYS` is defined, then ROOT is
@@ -2673,7 +2651,7 @@ class model_dayabay:
                 filenames=cfg_file_mapping["background_spectra"],
                 replicate_files=index["period"],
                 replicate_outputs=combinations["background.detector"],
-                skip=inactive_combinations,
+                skip=inactive_detectors,
                 key_order=(
                     ("period", "background", "detector"),
                     ("background", "detector", "period"),
@@ -2854,11 +2832,11 @@ class model_dayabay:
                 x="erec",
                 y="fine",
                 merge_x=True,
-                filenames=path_data
-                / f"{path_dataset}/{path_dataset}_ibd_spectra_{{}}.{self.source_type}",
+                filenames=cfg_file_mapping["dataset"],
                 replicate_files=index["period"],
                 replicate_outputs=combinations["detector"],
-                skip=inactive_combinations,
+                skip=inactive_detectors,
+                dtype="d",
                 name_function=lambda _, idx: f"ibd_spectrum_{idx[1]}",
             )
 
@@ -2999,21 +2977,6 @@ class model_dayabay:
                 replicate_outputs=combinations["background.period.detector"],
             )
 
-            if self.dataset == "a":
-                Sum.replicate(
-                    outputs("summary.total.background_rate.fast_neutrons"),
-                    outputs("summary.total.background_rate.muon_decay"),
-                    name="summary.total.background_rate_fast_neutrons_muon_decay",
-                    replicate_outputs=index["detector"],
-                )
-
-                Sum.replicate(
-                    outputs("summary.periods.background_rate.fast_neutrons"),
-                    outputs("summary.periods.background_rate.muon_decay"),
-                    name="summary.periods.background_rate_fast_neutrons_muon_decay",
-                    replicate_outputs=combinations["period.detector"],
-                )
-
             Sum.replicate(
                 outputs("summary.total.background_rate"),
                 name="summary.total.background_rate_total",
@@ -3023,6 +2986,48 @@ class model_dayabay:
             Sum.replicate(
                 outputs("summary.periods.background_rate"),
                 name="summary.periods.background_rate_total",
+                replicate_outputs=combinations["period.detector"],
+            )
+
+            Division.replicate(
+                outputs("summary.total.ibd_candidates"),
+                outputs("summary.total.eff_livetime"),
+                name="summary.total.rate_ibd_candidates_s",
+                replicate_outputs=combinations["detector"],
+            )
+
+            Division.replicate(
+                outputs("summary.periods.ibd_candidates"),
+                outputs("summary.periods.eff_livetime"),
+                name="summary.periods.rate_ibd_candidates_s",
+                replicate_outputs=combinations["period.detector"],
+            )
+
+            Product.replicate(
+                outputs("summary.total.rate_ibd_candidates_s"),
+                parameters["constant.conversion.seconds_in_day"],
+                name="summary.total.rate_ibd_candidates",
+                replicate_outputs=combinations["detector"],
+            )
+
+            Product.replicate(
+                outputs("summary.periods.rate_ibd_candidates_s"),
+                parameters["constant.conversion.seconds_in_day"],
+                name="summary.periods.rate_ibd_candidates",
+                replicate_outputs=combinations["period.detector"],
+            )
+
+            Difference.replicate(
+                outputs("summary.total.rate_ibd_candidates"),
+                outputs("summary.total.background_rate"),
+                name="summary.total.rate_ibd",
+                replicate_outputs=combinations["detector"],
+            )
+
+            Difference.replicate(
+                outputs("summary.periods.rate_ibd_candidates"),
+                outputs("summary.periods.background_rate"),
+                name="summary.periods.rate_ibd",
                 replicate_outputs=combinations["period.detector"],
             )
 
@@ -3438,16 +3443,6 @@ class model_dayabay:
 
         unused_keys = list(labels_mk.walkjoinedkeys())
         may_ignore = ["__common_definitions__"]
-        if self.dataset == "b":
-            may_ignore.extend(
-                [
-                    "background.count_fixed.muon_decay",
-                    "background.count.muon_decay",
-                    "background.spectrum.muon_decay",
-                    "background.spectrum_shape.muon_decay",
-                    "statistic.nuisance.parts.background.uncertainty_scale_by_site.muon_decay",
-                ]
-            )
 
         for key_may_ignore in list(may_ignore):
             cleanup = False
@@ -3481,26 +3476,18 @@ class model_dayabay:
                 raise ValueError(period)
 
         column_sources = {
-            # "count_ibd_candidates": "",
             "ibd_candidates": source_fmt.format(name="ibd_candidates"),
             "daq_time_day": source_fmt.format(name="livetime"),
             "daq_time_day_eff": source_fmt.format(name="eff_livetime"),
             "eff": source_fmt.format(name="eff"),
             "rate_accidentals": source_fmt.format(name="background_rate.accidentals"),
             "rate_fast_neutrons": source_fmt.format(name="background_rate.fast_neutrons"),
-            "rate_muon_decay": source_fmt.format(name="background_rate.muon_decay"),
-            "rate_fast_neutrons_muon_decay": source_fmt.format(
-                name="background_rate_fast_neutrons_muon_decay"
-            ),
             "rate_lithium_helium": source_fmt.format(name="background_rate.lithium_helium"),
             "rate_amc": source_fmt.format(name="background_rate.amc"),
             "rate_alpha_neutron": source_fmt.format(name="background_rate.alpha_neutron"),
             "rate_background_total": source_fmt.format(name="background_rate_total"),
-            # "rate_nu": ""
+            "rate_ibd": source_fmt.format(name="rate_ibd"),
         }
-        if self._dataset == "b":
-            del column_sources["rate_muon_decay"]
-            del column_sources["rate_fast_neutrons_muon_decay"]
 
         rows = list(self.index["detector"])
         columns = list(column_sources)
@@ -3511,7 +3498,6 @@ class model_dayabay:
                 source = self.storage["outputs"].get_dict(path)
             except KeyError:
                 print("error", key)
-                import IPython; IPython.embed(colors='neutral') # fmt: skip
                 continue
             for k, output in source.walkitems():
                 data = output.data
