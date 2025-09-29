@@ -7,12 +7,7 @@ from pytest import mark
 from dayabay_model_official import model_dayabay
 
 source_type_reference = "hdf5"
-source_types_other = ["tsv", "npz"]
-if "ROOTSYS" in environ:
-    print("ROOT is enabled")
-    source_types_other.append("root")
-else:
-    print("ROOT is disabled")
+source_types_other = ["tsv", "npz", "root"]
 
 precision_requirement = {"tsv": 2.0e-10, "root": 0, "npz": 0}
 set_verbosity(1)
