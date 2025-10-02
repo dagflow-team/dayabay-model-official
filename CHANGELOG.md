@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.1.1] - 2025-10-XX
+## [1.1.1] - 2025-10-02
 
 - feature: enable uproot only operation (no ROOT required).
 - chore: antineutrino spectrum parametrization edges are stored in a text file instead of python.
