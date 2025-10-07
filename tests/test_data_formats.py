@@ -15,7 +15,7 @@ set_verbosity(1)
 
 @mark.parametrize("source_type", source_types_other)
 def test_dayabay_v0(source_type: str):
-    data_location = "dayabay-data-all/dayabay-v1a"
+    data_location = "dayabay-data-official"
     model_ref = model_dayabay(
         path_data=f"{data_location}/{source_type_reference}",
     )

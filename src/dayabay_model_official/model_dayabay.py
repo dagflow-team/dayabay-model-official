@@ -425,6 +425,18 @@ class model_dayabay:
                 "AD33",
                 "AD34",
             ),
+            # A subset of detector names, which are considered for the χ² calculation.
+            # Will be applied for selection of the histograms for the model prediction and real data.
+            "detector_selected": (
+                "AD11",
+                "AD12",
+                "AD21",
+                "AD22",
+                "AD31",
+                "AD32",
+                "AD33",
+                "AD34",
+            ),
             # Source of background events:
             #     - accidentals: accidental coincidences
             #     - lithium_helium: ⁹Li and ⁸He related events
@@ -481,6 +493,14 @@ class model_dayabay:
 
         # Optionally override (reduce) indices
         index.update(override_indices)
+
+        # Check that the detector indices are consistent.
+        detectors = index["detector"]
+        detectors_selected = set(index["detector_selected"])
+        assert detectors_selected.issubset(
+            detectors
+        ), f"index['detector_selected'] is not consistent with index['detector']: {detectors_selected} ⊈ {detectors}"
+        index["detector_excluded"] = tuple(d for d in detectors if not d in detectors_selected)
 
         # Check there are now overlaps
         index_all = index["isotope"] + index["detector"] + index["reactor"] + index["period"]
@@ -2763,15 +2783,21 @@ class model_dayabay:
                 replicate_outputs=combinations["detector.period"],
             )
 
+            remap_items(
+                outputs.get_dict("eventscount.final.detector_period"),
+                outputs.create_child("eventscount.final.detector_period_selected"),
+                skip_indices_target=index["detector_excluded"],
+            )
+
             Concatenation.replicate(
-                outputs("eventscount.final.detector_period"),
+                outputs("eventscount.final.detector_period_selected"),
                 name="eventscount.final.concatenated.detector_period",
             )
 
             Sum.replicate(
-                outputs("eventscount.final.detector_period"),
+                outputs("eventscount.final.detector_period_selected"),
                 name="eventscount.final.detector",
-                replicate_outputs=index["detector"],
+                replicate_outputs=index["detector_selected"],
             )
 
             Concatenation.replicate(
@@ -2847,15 +2873,21 @@ class model_dayabay:
             )
             outputs["data.real.fine"] >> inputs.get_dict("data.real.final.detector_period")
 
+            remap_items(
+                outputs.get_dict("data.real.final.detector_period"),
+                outputs.create_child("data.real.final.detector_period_selected"),
+                skip_indices_target=index["detector_excluded"],
+            )
+
             Concatenation.replicate(
-                outputs("data.real.final.detector_period"),
+                outputs("data.real.final.detector_period_selected"),
                 name="data.real.concatenated.detector_period",
             )
 
             Sum.replicate(
-                outputs("data.real.final.detector_period"),
+                outputs("data.real.final.detector_period_selected"),
                 name="data.real.final.detector",
-                replicate_outputs=index["detector"],
+                replicate_outputs=index["detector_selected"],
             )
 
             Concatenation.replicate(
@@ -3396,6 +3428,22 @@ class model_dayabay:
             value = float(svalue)
             par = parameters_storage[parname]
             setter(par, value)
+
+    def switch_data(self, key: Literal["asimov", "real"]) -> None:
+        """Switch data.proxy output.
+
+        Parameters
+        ----------
+        type : Literal["asimov", "real"]
+            Choice for switching, Asimov or real data observation
+
+        Returns
+        -------
+        None
+        """
+        if key not in {"asimov", "real"}:
+            raise KeyError(f"Switch to `{key}` is not supported, `asimov`, `real` supported only")
+        self.storage["nodes.data.proxy"].switch_input({"asimov": 0, "real": 1}[key])
 
     def next_sample(self, *, mc_parameters: bool = True, mc_statistics: bool = True) -> None:
         if mc_parameters:
