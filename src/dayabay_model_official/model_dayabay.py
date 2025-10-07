@@ -3429,6 +3429,22 @@ class model_dayabay:
             par = parameters_storage[parname]
             setter(par, value)
 
+    def switch_data(self, key: Literal["asimov", "real"]) -> None:
+        """Switch data.proxy output.
+
+        Parameters
+        ----------
+        type : Literal["asimov", "real"]
+            Choice for switching, Asimov or real data observation
+
+        Returns
+        -------
+        None
+        """
+        if key not in {"asimov", "real"}:
+            raise KeyError(f"Switch to `{key}` is not supported, `asimov`, `real` supported only")
+        self.storage["nodes.data.proxy"].switch_input({"asimov": 0, "real": 1}[key])
+
     def next_sample(self, *, mc_parameters: bool = True, mc_statistics: bool = True) -> None:
         if mc_parameters:
             self.storage.get_value("nodes.mc.parameters.toymc").next_sample()
