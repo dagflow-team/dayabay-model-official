@@ -17,7 +17,7 @@ tests:
     - pip install -e ".[test]"
     - ipython kernel install --name "python3" --user
     - git clone --depth=1 https://gitlab-ci-token:${CI_JOB_TOKEN}@git.jinr.ru/dagflow-team/dayabay-data-official.git
-    - ln -s dayabay-data-all/hdf5 data
+    - ln -s dayabay-data-official/hdf5 data
     - coverage run --source=. -m pytest
     - coverage report
     - coverage xml
