@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [1.2.0] - 2025-10-07
 
 - feature: add `detector_selected` index to select detectors for the χ² construction.
-- feature: Add `switch_data` method from version v1a. It can switch model output between real data and Asimov.
+- feature: Add `switch_data` method. It can switch model output between real data (`real`) and Asimov (`asimov`).
 - feature: Support all the inputs via `uproot` (`ROOT` is supported just as before).
 - update: auto detection of source type skip `parameters` directory natively. Docstring was added.
 
