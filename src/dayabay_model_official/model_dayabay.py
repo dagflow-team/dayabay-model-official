@@ -427,7 +427,7 @@ class model_dayabay:
             ),
             # A subset of detector names, which are considered for the χ² calculation.
             # Will be applied for selection of the histograms for the model prediction and real data.
-            "detector_included": (
+            "detector_selected": (
                 "AD11",
                 "AD12",
                 "AD21",
@@ -496,10 +496,10 @@ class model_dayabay:
 
         # Check that the detector indices are consistent.
         detectors = index["detector"]
-        detectors_included = set(index["detector_included"])
+        detectors_included = set(index["detector_selected"])
         assert detectors_included.issubset(
             detectors
-        ), f"index['detector_included'] is not consistent with index['detector']: {detectors_included} ⊈ {detectors}"
+        ), f"index['detector_selected'] is not consistent with index['detector']: {detectors_included} ⊈ {detectors}"
         index["detector_excluded"] = tuple(d for d in detectors if not d in detectors_included)
 
         # Check there are now overlaps
@@ -2797,7 +2797,7 @@ class model_dayabay:
             Sum.replicate(
                 outputs("eventscount.final.detector_period_selected"),
                 name="eventscount.final.detector",
-                replicate_outputs=index["detector_included"],
+                replicate_outputs=index["detector_selected"],
             )
 
             Concatenation.replicate(
@@ -2887,7 +2887,7 @@ class model_dayabay:
             Sum.replicate(
                 outputs("data.real.final.detector_period_selected"),
                 name="data.real.final.detector",
-                replicate_outputs=index["detector_included"],
+                replicate_outputs=index["detector_selected"],
             )
 
             Concatenation.replicate(
