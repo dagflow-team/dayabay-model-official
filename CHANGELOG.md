@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.2.0] - 2025-10-07
+
+- feature: add `detector_selected` index to select detectors for the χ² construction.
+- feature: Add `switch_data` method from version v1a. It can switch model output between real data and Asimov.
+- feature: Support all the inputs via `uproot` (`ROOT` is supported just as before).
+- update: auto detection of source type skip `parameters` directory natively. Docstring was added.
+
 ## [1.1.1] - 2025-10-02
 
 - feature: enable uproot only operation (no ROOT required).
