@@ -10,6 +10,12 @@
 
 Official model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data.
 
+## Content
+
+- [Repositories](#repository)
+- [Minimal working example](minimal-working-example)
+
+
 ## Repositories
 
 - Development/CI: https://git.jinr.ru/dagflow-team/dayabay-model-official
