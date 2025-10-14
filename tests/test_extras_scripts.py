@@ -158,3 +158,9 @@ def test_run_dayabay_save_parameters_to_latex_datax():
     )
 
     _check_script_result(code, stderr, None, output_path)
+
+
+def test_run_mwe_scripts():
+    _, stderr, code = _run_script(
+        "./tests/shell/test_mwe_scripts.sh",
+    )
