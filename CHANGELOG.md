@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [1.2.1] - 2025-10-16
 
+- feature: validate the data version from `data_information.yaml` and use it to determine the `source_type` (data format).
+- feature: check that overridden indices exist.
+- fix: apply `Abs` transformation to scaled fission fractions.
 - chore: minor fixes and updates.
 
 ## [1.2.0] - 2025-10-07
