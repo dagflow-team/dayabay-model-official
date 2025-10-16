@@ -74,7 +74,8 @@ def main(opts: Namespace) -> None:
     theta13.pop()
     print(f"Restored sin²2θ₁₃={theta13.value}")
 
-    plt.show()
+    if opts.show:
+        plt.show()
 
 
 if __name__ == "__main__":
