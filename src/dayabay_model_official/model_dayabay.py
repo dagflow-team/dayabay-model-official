@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Literal
 from dag_modelling.core import Graph, NodeStorage
 from dag_modelling.tools.logger import INFO, logger
 from nested_mapping import NestedMapping
-from numpy import ndarray
+from numpy import ascontiguousarray, ndarray
 from numpy.random import Generator
 from pandas import DataFrame
 
@@ -82,8 +82,12 @@ class model_dayabay:
             - "normal-stats" - normal fluctuations with statistical,
               errors,
             - "poisson" - Poisson fluctuations.
+    _final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
+        Text file with bin edges for the final binning or the edges themselves, which is relevant for the χ² calculation.
     path_data : Path
         Path to the data.
+    leading_mass_splitting_3l_name: Literal["DeltaMSq32", "DeltaMSq31"], default="DeltaMSq32"
+        Leading mass splitting
 
     Technical attributes
     --------------------
@@ -114,6 +118,7 @@ class model_dayabay:
         "spectrum_correction_location",
         "concatenation_mode",
         "monte_carlo_mode",
+        "_final_erec_bin_edges",
         "_source_type",
         "_strict",
         "_close",
@@ -132,6 +137,7 @@ class model_dayabay:
     spectrum_correction_location: Literal["before-integration", "after-integration"]
     concatenation_mode: Literal["detector", "detector_period"]
     monte_carlo_mode: Literal["asimov", "normal-stats", "poisson"]
+    _final_erec_bin_edges: Path | NDArray | None
     _source_type: Literal["tsv", "hdf5", "root", "npz", "default:hdf5"]
     _strict: bool
     _close: bool
@@ -156,6 +162,7 @@ class model_dayabay:
         concatenation_mode: Literal["detector", "detector_period"] = "detector_period",
         parameter_values: dict[str, float | str] = {},
         path_data: str | Path | None = None,
+        final_erec_bin_edges: str | Path | Sequence[int | float] | NDArray | None = None,
     ):
         """Model initialization.
 
@@ -189,9 +196,14 @@ class model_dayabay:
             case _:
                 raise RuntimeError(f"Unsupported path option: {path_data}")
 
-        from .tools import auto_detect_source_type
+        from .tools.validate_dataset import validate_dataset_get_source_type
 
-        self._source_type = auto_detect_source_type(self._path_data)
+        self._source_type = validate_dataset_get_source_type(
+            self._path_data,
+            "dataset_info.yaml",
+            version_min="0.1.0",
+            version_max="1.0.0"
+        )
 
         self.storage = NodeStorage()
         self._leading_mass_splitting_3l_name = leading_mass_splitting_3l_name
@@ -199,10 +211,20 @@ class model_dayabay:
         self.spectrum_correction_location = spectrum_correction_location
         self.concatenation_mode = concatenation_mode
         self.monte_carlo_mode = monte_carlo_mode
+        match final_erec_bin_edges:
+            case str() | Path():
+                self._final_erec_bin_edges = Path(final_erec_bin_edges)
+            case Sequence() | ndarray():
+                self._final_erec_bin_edges = ascontiguousarray(final_erec_bin_edges, dtype="d")
+            case None:
+                self._final_erec_bin_edges = None
+            case _:
+                raise RuntimeError(
+                    f"Invalid 'final_erec_bin_edges type: {type(final_erec_bin_edges).__name__}"
+                )
         self._random_generator = self._create_random_generator(seed)
 
         logger.log(INFO, f"Model version: {type(self).__name__}")
-        logger.log(INFO, f"Source type: {self._source_type}")
         logger.log(INFO, f"Data path: {self.path_data!s}")
         logger.log(INFO, f"Concatenation mode: {self.concatenation_mode}")
         logger.log(
@@ -239,6 +261,7 @@ class model_dayabay:
         cfg_file_mapping = {
             "antineutrino_spectrum_segment_edges": path_parameters
             / "reactor_antineutrino_spectrum_edges.tsv",
+            "final_erec_bin_edges": path_parameters / "final_erec_bin_edges.tsv",
             "parameters.survival_probability": path_parameters / "survival_probability.yaml",
             "parameters.survival_probability_solar": path_parameters
             / "survival_probability_solar.yaml",
@@ -298,6 +321,11 @@ class model_dayabay:
             f"{self.source_type}",
             "dataset": path_data / "dayabay_dataset/dayabay_ibd_spectra_{}." f"{self.source_type}",
         }
+        match self._final_erec_bin_edges:
+            case Path():
+                cfg_file_mapping["final_erec_bin_edges"] = self._final_erec_bin_edges
+            case ndarray():
+                del cfg_file_mapping["final_erec_bin_edges"]
 
         for cfg_name, path in override_cfg_files.items():
             cfg_file_mapping.update({cfg_name: Path(path)})
@@ -492,7 +520,10 @@ class model_dayabay:
         index["isotope_lower"] = tuple(isotope.lower() for isotope in index["isotope"])
 
         # Optionally override (reduce) indices
-        index.update(override_indices)
+        for index_name, index_values in override_indices.items():
+            if index_name not in index:
+                raise RuntimeError(f"Invalide index {index_name} found when overriding indices")
+            index[index_name] = index_values
 
         # Check that the detector indices are consistent.
         detectors = index["detector"]
@@ -889,8 +920,15 @@ class model_dayabay:
             # - cosθ (positron angle) edges [-1,1] are defined explicitly for the
             #   integration of the Inverse Beta Decay (IBD) cross section.
             in_edges_fine = linspace(0, 12, 241)
-            in_edges_final = concatenate(([0.7], arange(1.3, 7.41, 0.25), [12.0]))
             in_edges_costheta = [-1, 1]
+
+            if isinstance(self._final_erec_bin_edges, ndarray):
+                in_edges_final = self._final_erec_bin_edges
+                logger.info(f"Final Erec bin edges passed via argument: {in_edges_final!s}")
+            else:
+                in_edges_final = FileReader.record[cfg_file_mapping["final_erec_bin_edges"]][
+                    "E_rec_MeV"
+                ]
 
             # Instantiate the storage nodes for bin edges. In what follows all the
             # nodes, outputs and inputs are automatically added to the relevant storage
@@ -1951,12 +1989,23 @@ class model_dayabay:
                 replicate_outputs=combinations["reactor.isotope.period"],
             )
 
+            # Compute absollute value of previous transformation. It is needed because
+            # sometime minimization procedure goes to the non-physical values of
+            # fission fraction. This transforamtion limits possible variations.
+            Abs.replicate(
+                name="daily_data.reactor.fission_fraction_scaled_abs",
+                replicate_outputs=combinations["reactor.isotope.period"],
+            )
+            outputs.get_dict("daily_data.reactor.fission_fraction_scaled") >> inputs.get_dict(
+                "daily_data.reactor.fission_fraction_scaled_abs"
+            )
+
             # Using daily fission fractions compute weighted energy per fission in each
             # isotope in each reactor during each period. This is an intermediate step
             # to obtain average energy per fission in each reactor.
             Product.replicate(
                 parameters.get_dict("all.reactor.energy_per_fission"),
-                outputs.get_dict("daily_data.reactor.fission_fraction_scaled"),
+                outputs.get_dict("daily_data.reactor.fission_fraction_scaled_abs"),
                 name="reactor.energy_per_fission_weighted_MeV",
                 replicate_outputs=combinations["reactor.isotope.period"],
             )
@@ -1975,28 +2024,17 @@ class model_dayabay:
             # thermal power.
             Product.replicate(
                 outputs.get_dict("daily_data.reactor.power"),
-                outputs.get_dict("daily_data.reactor.fission_fraction_scaled"),
+                outputs.get_dict("daily_data.reactor.fission_fraction_scaled_abs"),
                 outputs.get_dict("reactor.thermal_power_nominal_MeVs"),
                 name="reactor.thermal_power_isotope_MeV_per_second",
                 replicate_outputs=combinations["reactor.isotope.period"],
-            )
-
-            # Compute absollute value of previous transformation. It is needed because
-            # sometime minimization procedure goes to the non-physical values of
-            # fission fraction. This transforamtion limits possible variations.
-            Abs.replicate(
-                name="reactor.thermal_power_abs_isotope_MeV_per_second",
-                replicate_outputs=combinations["reactor.isotope.period"],
-            )
-            outputs.get_dict("reactor.thermal_power_isotope_MeV_per_second") >> inputs.get_dict(
-                "reactor.thermal_power_abs_isotope_MeV_per_second"
             )
 
             # Compute number of fissions per second related to each isotope in each
             # reactor and each period: divide partial thermal power by average energy
             # per fission.
             Division.replicate(
-                outputs.get_dict("reactor.thermal_power_abs_isotope_MeV_per_second"),
+                outputs.get_dict("reactor.thermal_power_isotope_MeV_per_second"),
                 outputs.get_dict("reactor.energy_per_fission_average_MeV"),
                 name="reactor.fissions_per_second",
                 replicate_outputs=combinations["reactor.isotope.period"],
@@ -3371,6 +3409,9 @@ class model_dayabay:
             # fmt: on
 
         self._setup_labels()
+
+        # Model will load real data
+        self.switch_data("real")
 
         # Ensure stem nodes are calculated
         self._touch()

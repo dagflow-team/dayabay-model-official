@@ -33,7 +33,7 @@ def main(opts: Namespace) -> None:
     print(f"Initial sin²2θ₁₃={theta13.value}")
     theta13_initial_value = theta13.value
     theta13.push()
-    print("Compute covariance matrix. this will take less than a minute...")
+    print("Compute covariance matrix. This will take less than a minute...")
     model.update_covariance_matrix()
     model.update_frozen_nodes()
 
