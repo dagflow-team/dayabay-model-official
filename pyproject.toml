@@ -19,10 +19,12 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
+  "colorama",
   "dag-modelling>=0.14.1",
   "dgm-fit>=0.2",
   "dgm-reactor-neutrino>=0.2.1",
   "more-itertools",
+  "semver",
 ]
 
 optional-dependencies.test = [
