@@ -20,7 +20,6 @@ classifiers = [
 ]
 dependencies = [
   "colorama",
-  "dag-modelling>=0.14.1",
   "dgm-fit>=0.2",
   "dgm-reactor-neutrino>=0.2.1",
   "more-itertools",
@@ -28,15 +27,13 @@ dependencies = [
 ]
 
 optional-dependencies.test = [
-  "coverage",
+  "dgm-reactor-neutrino[test]>=0.2.1",
   "ipykernel",
   "ipython",
   "ipywidgets",
   "nbconvert",
   "parameterized",
   "pygraphviz",
-  "pytest",
-  "pytest-cov",
 ]
 
 urls."Bug Tracker" = "https://github.com/dagflow-team/dayabay-model-official/issues"
