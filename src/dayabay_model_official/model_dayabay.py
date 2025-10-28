@@ -89,6 +89,8 @@ class model_dayabay:
         Text file with bin edges for the antineutrino spectrum or the edges themselves, which is relevant for the χ² calculation.
     final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
         Text file with bin edges for the final binning or the edges themselves, which is relevant for the χ² calculation.
+    is_absolute_efficiency_fixed : bool, default=True
+        Switch detector absolute correlated efficiency from fixed to constrained parameter.
     path_data : Path
         Path to the data.
     leading_mass_splitting_3l_name: Literal["DeltaMSq32", "DeltaMSq31"], default="DeltaMSq32"
@@ -123,6 +125,7 @@ class model_dayabay:
         "spectrum_correction_location",
         "concatenation_mode",
         "monte_carlo_mode",
+        "_is_absolute_efficiency_fixed",
         "_arrays_dict",
         "_source_type",
         "_strict",
@@ -169,6 +172,7 @@ class model_dayabay:
         path_data: str | Path | None = None,
         antineutrino_spectrum_segment_edges: str | Path | None = None,
         final_erec_bin_edges: str | Path | Sequence[int | float] | NDArray | None = None,
+        is_absolute_efficiency_fixed: bool = True,
     ):
         """Model initialization.
 
@@ -223,6 +227,7 @@ class model_dayabay:
         self.spectrum_correction_location = spectrum_correction_location
         self.concatenation_mode = concatenation_mode
         self.monte_carlo_mode = monte_carlo_mode
+        self._is_absolute_efficiency_fixed = is_absolute_efficiency_fixed
 
         from .tools.validate_load_array import validate_load_array
         self._arrays_dict = {
@@ -804,7 +809,7 @@ class model_dayabay:
             load_parameters(
                 path="detector",
                 load=cfg_file_mapping["parameters.detector_absolute"],
-                # state="fixed" if self._is_absolute_efficiency_fixed else "variable",
+                state="fixed" if self._is_absolute_efficiency_fixed else "variable",
             )
             # By default extra index is appended at the end of the key (path). A
             # `keys_order` argument is used to change the order of the keys from
