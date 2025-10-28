@@ -1,22 +1,25 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from itertools import product
 from os.path import relpath
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
+from collections.abc import Mapping, Sequence
 
 from dag_modelling.core import Graph, NodeStorage
 from dag_modelling.tools.logger import INFO, logger
 from nested_mapping import NestedMapping
-from numpy import ascontiguousarray, ndarray
+from numpy import ndarray
 from numpy.random import Generator
 from pandas import DataFrame
 
 # pyright: reportUnusedExpression=false
 
 if TYPE_CHECKING:
+    from typing import Literal
+
     from dag_modelling.core.meta_node import MetaNode
+    from numpy.typing import NDArray
 
 # Define a dictionary of groups of nuisance parameters in a format `name: path`,
 # where path denotes the location of the parameters in the storage.
@@ -82,12 +85,14 @@ class model_dayabay:
             - "normal-stats" - normal fluctuations with statistical,
               errors,
             - "poisson" - Poisson fluctuations.
-    _final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
+    antineutrino_spectrum_segment_edges : Path | Sequence[int | float] | NDArray | None, default=None
+        Text file with bin edges for the antineutrino spectrum or the edges themselves, which is relevant for the χ² calculation.
+    final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
         Text file with bin edges for the final binning or the edges themselves, which is relevant for the χ² calculation.
     path_data : Path
         Path to the data.
     leading_mass_splitting_3l_name: Literal["DeltaMSq32", "DeltaMSq31"], default="DeltaMSq32"
-        Leading mass splitting
+        Leading mass splitting.
 
     Technical attributes
     --------------------
@@ -97,14 +102,14 @@ class model_dayabay:
             - any labels were not applied.
     _close : bool, default=True
         if True the graph is closed and memory is allocated
-        may be used to debug corrupt model
+        may be used to debug corrupt model.
     _random_generator : Generator
-        numpy random generator to be used for ToyMC
+        numpy random generator to be used for ToyMC.
     _covariance_matrix : MetaNode
-        covariance matrix, computed on this model
+        covariance matrix, computed on this model.
     _frozen_nodes : dict[str, tuple]
         storage with nodes, which are being fixed at their values and
-        require manual intervention in order to be recalculated
+        require manual intervention in order to be recalculated.
     """
 
     __slots__ = (
@@ -118,7 +123,7 @@ class model_dayabay:
         "spectrum_correction_location",
         "concatenation_mode",
         "monte_carlo_mode",
-        "_final_erec_bin_edges",
+        "_arrays_dict",
         "_source_type",
         "_strict",
         "_close",
@@ -137,8 +142,8 @@ class model_dayabay:
     spectrum_correction_location: Literal["before-integration", "after-integration"]
     concatenation_mode: Literal["detector", "detector_period"]
     monte_carlo_mode: Literal["asimov", "normal-stats", "poisson"]
-    _final_erec_bin_edges: Path | NDArray | None
-    _source_type: Literal["tsv", "hdf5", "root", "npz", "default:hdf5"]
+    _arrays_dict: dict[str, Path | NDArray | None]
+    _source_type: Literal["tsv", "hdf5", "root", "npz"]
     _strict: bool
     _close: bool
     _random_generator: Generator
@@ -162,6 +167,7 @@ class model_dayabay:
         concatenation_mode: Literal["detector", "detector_period"] = "detector_period",
         parameter_values: dict[str, float | str] = {},
         path_data: str | Path | None = None,
+        antineutrino_spectrum_segment_edges: str | Path | None = None,
         final_erec_bin_edges: str | Path | Sequence[int | float] | NDArray | None = None,
     ):
         """Model initialization.
@@ -188,6 +194,12 @@ class model_dayabay:
         assert monte_carlo_mode in {"asimov", "normal-stats", "poisson"}
         assert concatenation_mode in {"detector", "detector_period"}
 
+        if antineutrino_spectrum_segment_edges is not None and override_cfg_files.get("antineutrino_spectrum_segment_edges"):
+            raise RuntimeError("Antineutrino bin edges couldn't be overloaded via `antineutrino_spectrum_segment_edges` and `override_cfg_files` simultaneously")
+
+        if final_erec_bin_edges is not None and override_cfg_files.get("final_erec_bin_edges"):
+            raise RuntimeError("Final Erec bin edges couldn't be overloaded via `final_erec_bin_edges` and `override_cfg_files` simultaneously")
+
         match path_data:
             case str() | Path():
                 self._path_data = Path(path_data)
@@ -211,17 +223,12 @@ class model_dayabay:
         self.spectrum_correction_location = spectrum_correction_location
         self.concatenation_mode = concatenation_mode
         self.monte_carlo_mode = monte_carlo_mode
-        match final_erec_bin_edges:
-            case str() | Path():
-                self._final_erec_bin_edges = Path(final_erec_bin_edges)
-            case Sequence() | ndarray():
-                self._final_erec_bin_edges = ascontiguousarray(final_erec_bin_edges, dtype="d")
-            case None:
-                self._final_erec_bin_edges = None
-            case _:
-                raise RuntimeError(
-                    f"Invalid 'final_erec_bin_edges type: {type(final_erec_bin_edges).__name__}"
-                )
+
+        from .tools.validate_load_array import validate_load_array
+        self._arrays_dict = {
+            "antineutrino_spectrum_segment_edges": validate_load_array(antineutrino_spectrum_segment_edges),
+            "final_erec_bin_edges": validate_load_array(final_erec_bin_edges),
+        }
         self._random_generator = self._create_random_generator(seed)
 
         logger.log(INFO, f"Model version: {type(self).__name__}")
@@ -284,6 +291,7 @@ class model_dayabay:
             "parameters.detector_iav_offdiag_scale": path_parameters
             / "detector_iav_offdiag_scale.yaml",
             "parameters.detector_relative": path_parameters / "detector_relative.yaml",
+            "parameters.detector_absolute": path_parameters / "extra/detector_absolute.yaml",
             "parameters.reactor_thermal_power_nominal": path_parameters
             / "reactor_thermal_power_nominal.yaml",
             "parameters.reactor_energy_per_fission": path_parameters
@@ -321,14 +329,15 @@ class model_dayabay:
             f"{self.source_type}",
             "dataset": path_data / "dayabay_dataset/dayabay_ibd_spectra_{}." f"{self.source_type}",
         }
-        match self._final_erec_bin_edges:
-            case Path():
-                cfg_file_mapping["final_erec_bin_edges"] = self._final_erec_bin_edges
-            case ndarray():
-                del cfg_file_mapping["final_erec_bin_edges"]
-
         for cfg_name, path in override_cfg_files.items():
             cfg_file_mapping.update({cfg_name: Path(path)})
+
+        for array_name, array in self._arrays_dict.items():
+            match array:
+                case ndarray():
+                    del cfg_file_mapping[array_name]
+                case Path():
+                    cfg_file_mapping[array_name] = array
 
         return cfg_file_mapping
 
@@ -405,7 +414,7 @@ class model_dayabay:
             NueSurvivalProbability,
         )
         from nested_mapping.tools import remap_items
-        from numpy import arange, concatenate, linspace
+        from numpy import linspace
 
         from .bundles.refine_detector_data import refine_detector_data
         from .bundles.refine_lsnl_data import refine_lsnl_data
@@ -418,9 +427,13 @@ class model_dayabay:
         # Read Eν edges for the parametrization of free antineutrino spectrum model
         # Loads the python file and returns variable "edges", which should be defined
         # in the file and has type `ndarray`.
-        antineutrino_model_edges = FileReader.record[
-            cfg_file_mapping["antineutrino_spectrum_segment_edges"]
-        ]["E_neutrino_MeV"]
+        if isinstance(self._arrays_dict["antineutrino_spectrum_segment_edges"], ndarray):
+            antineutrino_model_edges = self._arrays_dict["antineutrino_spectrum_segment_edges"]
+            logger.info(f"Antineutrino model bin edges passed via argument: {antineutrino_model_edges!s}")
+        else:
+            antineutrino_model_edges = FileReader.record[
+                cfg_file_mapping["antineutrino_spectrum_segment_edges"]
+            ]["E_neutrino_MeV"]
 
         # Provide some convenience substitutions for labels
         index_names = {
@@ -786,6 +799,13 @@ class model_dayabay:
                     ("pargroup", "detector", "par"),
                 ),
             )
+
+            # Absolute correlated between detectors efficiency factor
+            load_parameters(
+                path="detector",
+                load=cfg_file_mapping["parameters.detector_absolute"],
+                # state="fixed" if self._is_absolute_efficiency_fixed else "variable",
+            )
             # By default extra index is appended at the end of the key (path). A
             # `keys_order` argument is used to change the order of the keys from
             # group.par.detector to group.detector.par so it is easier to access both
@@ -922,8 +942,8 @@ class model_dayabay:
             in_edges_fine = linspace(0, 12, 241)
             in_edges_costheta = [-1, 1]
 
-            if isinstance(self._final_erec_bin_edges, ndarray):
-                in_edges_final = self._final_erec_bin_edges
+            if isinstance(self._arrays_dict["final_erec_bin_edges"], ndarray):
+                in_edges_final = self._arrays_dict["final_erec_bin_edges"]
                 logger.info(f"Final Erec bin edges passed via argument: {in_edges_final!s}")
             else:
                 in_edges_final = FileReader.record[cfg_file_mapping["final_erec_bin_edges"]][
@@ -2608,6 +2628,7 @@ class model_dayabay:
             Product.replicate(
                 parameters.get_value("all.detector.global_normalization"),
                 parameters.get_dict("selected.detector.parameters_relative.efficiency_factor"),
+                parameters.get_value("all.detector.detector_absolute.efficiency_factor"),
                 name="detector.normalization",
                 replicate_outputs=index["detector"],
             )
