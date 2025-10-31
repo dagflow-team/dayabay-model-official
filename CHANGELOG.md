@@ -5,11 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [1.2.2] - 2025-10-xx
+## [1.3.0] - 2025-10-31
 
 - feature: add `covariance_groups` parameter to control passed nuisance parameters to covarince matrix, works only with `strict=False`.
 - feature: add `pull_groups` parameter to control passed nuisance parameters to `nuisance.pull_extra`.
 - feature: add `is_absolute_efficiency_fixed` parameter to switch between fixed/variable absolute correlated detector efficiency.
+- feature: prepare code for reading variable periods of reactor data.
 
 ## [1.2.1] - 2025-10-16
 
