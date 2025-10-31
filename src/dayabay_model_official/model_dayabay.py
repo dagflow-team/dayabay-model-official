@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from itertools import product
 from os.path import relpath
 from pathlib import Path
 from typing import TYPE_CHECKING
-from collections.abc import Mapping, Sequence
 
 from dag_modelling.core import Graph, NodeStorage
 from dag_modelling.tools.logger import INFO, logger

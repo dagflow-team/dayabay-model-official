@@ -1,13 +1,10 @@
+from nested_mapping.nested_mapping import NestedMapping
 from numpy import arange, concatenate, linspace
 from numpy.typing import NDArray
 from scipy.interpolate import interp1d
 
-from nested_mapping.nested_mapping import NestedMapping
 
-
-def refine_lsnl_data(
-    storage: NestedMapping, *, xname: str, nominalname: str, **kwargs
-) -> None:
+def refine_lsnl_data(storage: NestedMapping, *, xname: str, nominalname: str, **kwargs) -> None:
     xcoarse = storage[xname]
 
     refiner = RefineGraph(xcoarse, **kwargs)
@@ -83,9 +80,9 @@ class RefineGraph:
 
         if self.newmax is not None:
             stepright = self.xfine_bound[-1] - self.xfine_bound[-2]
-            xstack[-1] = arange(
-                self.xfine_bound[-1], self.newmax + stepright * 1.0e-6, stepright
-            )[1:]
+            xstack[-1] = arange(self.xfine_bound[-1], self.newmax + stepright * 1.0e-6, stepright)[
+                1:
+            ]
 
         self.xfine_extended = concatenate(xstack)
         self.xfine_extended_stack = tuple(xstack)

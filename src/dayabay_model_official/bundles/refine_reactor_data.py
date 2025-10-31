@@ -134,17 +134,13 @@ def refine_reactor_data(
 
         ndays0 = ndays[0]
         if not (ndays[:-1] == ndays0).all():
-            raise ValueError(
-                "refine_reactor_data expects information with constant periodicity"
-            )
+            raise ValueError("refine_reactor_data expects information with constant periodicity")
 
         power = source["power"][corename]
         fission_fractions = {key: source[key.lower(), corename] for key in isotopes}
 
         step = period[1:] - period[:-1]
-        assert (
-            step == 1
-        ).all(), "Expect reactor data for with distinct period, no gaps"
+        assert (step == 1).all(), "Expect reactor data for with distinct period, no gaps"
 
         target["days"] = (days_storage := {})
         for period in periods:
