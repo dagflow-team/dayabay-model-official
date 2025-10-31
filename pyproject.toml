@@ -5,8 +5,8 @@ requires = [ "packaging", "setuptools", "wheel" ]
 
 [project]
 name = "dayabay-model-official"
-version = "1.2.1"
-description = "Official model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data"
+version = "1.3.0"
+description = "Official model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data."
 readme = "README.md"
 license = "MIT"
 maintainers = [ { name = "DAGModelling Team", email = "dagflow@jinr.ru" } ]
@@ -20,23 +20,20 @@ classifiers = [
 ]
 dependencies = [
   "colorama",
-  "dag-modelling>=0.14.1",
   "dgm-fit>=0.2",
-  "dgm-reactor-neutrino>=0.2.1",
+  "dgm-reactor-neutrino>=0.2.2",
   "more-itertools",
   "semver",
 ]
 
 optional-dependencies.test = [
-  "coverage",
+  "dgm-reactor-neutrino[test]>=0.2.2",
   "ipykernel",
   "ipython",
   "ipywidgets",
   "nbconvert",
   "parameterized",
   "pygraphviz",
-  "pytest",
-  "pytest-cov",
 ]
 
 urls."Bug Tracker" = "https://github.com/dagflow-team/dayabay-model-official/issues"
@@ -61,3 +58,7 @@ line-length = 100
 profile = "black"
 line_length = 100
 multi_line_output = 5
+
+[tool.docformatter]
+wrap-summaries = 100
+wrap-descriptions = 100

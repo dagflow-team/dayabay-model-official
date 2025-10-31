@@ -4,19 +4,22 @@ from collections.abc import Mapping, Sequence
 from itertools import product
 from os.path import relpath
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from dag_modelling.core import Graph, NodeStorage
 from dag_modelling.tools.logger import INFO, logger
 from nested_mapping import NestedMapping
-from numpy import ascontiguousarray, ndarray
+from numpy import ndarray
 from numpy.random import Generator
 from pandas import DataFrame
 
 # pyright: reportUnusedExpression=false
 
 if TYPE_CHECKING:
+    from typing import KeysView, Literal
+
     from dag_modelling.core.meta_node import MetaNode
+    from numpy.typing import NDArray
 
 # Define a dictionary of groups of nuisance parameters in a format `name: path`,
 # where path denotes the location of the parameters in the storage.
@@ -82,29 +85,44 @@ class model_dayabay:
             - "normal-stats" - normal fluctuations with statistical,
               errors,
             - "poisson" - Poisson fluctuations.
-    _final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
+    covariance_groups: list[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
+        "energy_per_fission", "nominal_thermal_power", "snf", "neq", "fission_fraction", "background_rate",
+        "hm_corr", "hm_uncorr"]], default=[]
+        List of nuicance groups to be added to covariance matrix. If no parameters passed,
+        full covariance matrix will be created.
+    pull_groups: list[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
+        "energy_per_fission", "nominal_thermal_power", "snf", "neq", "fission_fraction", "background_rate",
+        "hm_corr", "hm_uncorr"]], default=[]
+        List of nuicance groups to be added to `nuisance.extra_pull`. If no parameters passed, it will add all nuisance parameters.
+    antineutrino_spectrum_segment_edges : Path | Sequence[int | float] | NDArray | None, default=None
+        Text file with bin edges for the antineutrino spectrum or the edges themselves, which is relevant for the χ² calculation.
+    final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
         Text file with bin edges for the final binning or the edges themselves, which is relevant for the χ² calculation.
+    is_absolute_efficiency_fixed : bool, default=True
+        Switch detector absolute correlated efficiency from fixed to constrained parameter.
     path_data : Path
         Path to the data.
     leading_mass_splitting_3l_name: Literal["DeltaMSq32", "DeltaMSq31"], default="DeltaMSq32"
-        Leading mass splitting
+        Leading mass splitting.
 
     Technical attributes
     --------------------
+    _source_type : str, default="hdf5"
+        Type of the data to read ("tsv", "hdf5", "root" or "npz").
     _strict : bool, default=True
         Strict mode. Stop execution if:
             - the model is not complete,
             - any labels were not applied.
     _close : bool, default=True
         if True the graph is closed and memory is allocated
-        may be used to debug corrupt model
+        may be used to debug corrupt model.
     _random_generator : Generator
-        numpy random generator to be used for ToyMC
+        numpy random generator to be used for ToyMC.
     _covariance_matrix : MetaNode
-        covariance matrix, computed on this model
+        covariance matrix, computed on this model.
     _frozen_nodes : dict[str, tuple]
         storage with nodes, which are being fixed at their values and
-        require manual intervention in order to be recalculated
+        require manual intervention in order to be recalculated.
     """
 
     __slots__ = (
@@ -118,7 +136,10 @@ class model_dayabay:
         "spectrum_correction_location",
         "concatenation_mode",
         "monte_carlo_mode",
-        "_final_erec_bin_edges",
+        "_covariance_groups",
+        "_pull_groups",
+        "_is_absolute_efficiency_fixed",
+        "_arrays_dict",
         "_source_type",
         "_strict",
         "_close",
@@ -137,8 +158,20 @@ class model_dayabay:
     spectrum_correction_location: Literal["before-integration", "after-integration"]
     concatenation_mode: Literal["detector", "detector_period"]
     monte_carlo_mode: Literal["asimov", "normal-stats", "poisson"]
-    _final_erec_bin_edges: Path | NDArray | None
-    _source_type: Literal["tsv", "hdf5", "root", "npz", "default:hdf5"]
+    _arrays_dict: dict[str, Path | NDArray | None]
+    _covariance_groups: Sequence[Literal[
+            "survival_probability", "eres", "lsnl", "iav",
+            "detector_relative", "energy_per_fission", "nominal_thermal_power",
+            "snf", "neq", "fission_fraction", "background_rate", "hm_corr", "hm_uncorr"
+    ]] | KeysView
+    _pull_groups: Sequence[Literal[
+            "survival_probability", "eres", "lsnl", "iav",
+            "detector_relative", "energy_per_fission", "nominal_thermal_power",
+            "snf", "neq", "fission_fraction", "background_rate", "hm_corr", "hm_uncorr"
+    ]]
+    _arrays_dict: dict[str, Path | NDArray | None]
+    _is_absolute_efficiency_fixed: bool
+    _source_type: Literal["tsv", "hdf5", "root", "npz"]
     _strict: bool
     _close: bool
     _random_generator: Generator
@@ -162,7 +195,19 @@ class model_dayabay:
         concatenation_mode: Literal["detector", "detector_period"] = "detector_period",
         parameter_values: dict[str, float | str] = {},
         path_data: str | Path | None = None,
+        antineutrino_spectrum_segment_edges: str | Path | None = None,
         final_erec_bin_edges: str | Path | Sequence[int | float] | NDArray | None = None,
+        covariance_groups: Sequence[Literal[
+            "survival_probability", "eres", "lsnl", "iav",
+            "detector_relative", "energy_per_fission", "nominal_thermal_power",
+            "snf", "neq", "fission_fraction", "background_rate", "hm_corr", "hm_uncorr"
+        ]] | KeysView = [],
+        pull_groups: Sequence[Literal[
+            "survival_probability", "eres", "lsnl", "iav",
+            "detector_relative", "energy_per_fission", "nominal_thermal_power",
+            "snf", "neq", "fission_fraction", "background_rate", "hm_corr", "hm_uncorr"
+        ]] = [],
+        is_absolute_efficiency_fixed: bool = True,
     ):
         """Model initialization.
 
@@ -188,6 +233,43 @@ class model_dayabay:
         assert monte_carlo_mode in {"asimov", "normal-stats", "poisson"}
         assert concatenation_mode in {"detector", "detector_period"}
 
+        for covariance_group in covariance_groups:
+            assert covariance_group in _SYSTEMATIC_UNCERTAINTIES_GROUPS
+
+        if not covariance_groups:
+            covariance_groups = _SYSTEMATIC_UNCERTAINTIES_GROUPS.keys()
+
+        covariance_groups_set = set(covariance_groups)
+        pull_groups_set = set(pull_groups)
+        pull_covariance_intersect = pull_groups_set.intersection(covariance_groups_set)
+        if pull_covariance_intersect:
+            logger.log(
+                INFO,
+                "Pull groups intersect with covariance groups: "
+                f"{pull_covariance_intersect}")
+
+        systematic_groups_pull_covariance_intersect = set(
+            _SYSTEMATIC_UNCERTAINTIES_GROUPS.keys()
+        ).difference(covariance_groups_set).difference(pull_groups_set)
+        if systematic_groups_pull_covariance_intersect:
+            logger.log(
+                INFO,
+                "Several systematic groups are missing from `pull_groups` and `covariance_groups`: "
+                f"{systematic_groups_pull_covariance_intersect}"
+            )
+
+        from .tools.validate_load_array import validate_load_array
+        self._arrays_dict = {
+            "antineutrino_spectrum_segment_edges": validate_load_array(antineutrino_spectrum_segment_edges),
+            "final_erec_bin_edges": validate_load_array(final_erec_bin_edges),
+        }
+
+        if antineutrino_spectrum_segment_edges is not None and override_cfg_files.get("antineutrino_spectrum_segment_edges"):
+            raise RuntimeError("Antineutrino bin edges couldn't be overloaded via `antineutrino_spectrum_segment_edges` and `override_cfg_files` simultaneously")
+
+        if final_erec_bin_edges is not None and override_cfg_files.get("final_erec_bin_edges"):
+            raise RuntimeError("Final Erec bin edges couldn't be overloaded via `final_erec_bin_edges` and `override_cfg_files` simultaneously")
+
         match path_data:
             case str() | Path():
                 self._path_data = Path(path_data)
@@ -199,10 +281,7 @@ class model_dayabay:
         from .tools.validate_dataset import validate_dataset_get_source_type
 
         self._source_type = validate_dataset_get_source_type(
-            self._path_data,
-            "dataset_info.yaml",
-            version_min="0.1.0",
-            version_max="1.0.0"
+            self._path_data, "dataset_info.yaml", version_min="0.1.0", version_max="1.0.0"
         )
 
         self.storage = NodeStorage()
@@ -211,17 +290,15 @@ class model_dayabay:
         self.spectrum_correction_location = spectrum_correction_location
         self.concatenation_mode = concatenation_mode
         self.monte_carlo_mode = monte_carlo_mode
-        match final_erec_bin_edges:
-            case str() | Path():
-                self._final_erec_bin_edges = Path(final_erec_bin_edges)
-            case Sequence() | ndarray():
-                self._final_erec_bin_edges = ascontiguousarray(final_erec_bin_edges, dtype="d")
-            case None:
-                self._final_erec_bin_edges = None
-            case _:
-                raise RuntimeError(
-                    f"Invalid 'final_erec_bin_edges type: {type(final_erec_bin_edges).__name__}"
-                )
+        self._covariance_groups = covariance_groups
+        self._pull_groups = pull_groups
+        self._is_absolute_efficiency_fixed = is_absolute_efficiency_fixed
+
+        from .tools.validate_load_array import validate_load_array
+        self._arrays_dict = {
+            "antineutrino_spectrum_segment_edges": validate_load_array(antineutrino_spectrum_segment_edges),
+            "final_erec_bin_edges": validate_load_array(final_erec_bin_edges),
+        }
         self._random_generator = self._create_random_generator(seed)
 
         logger.log(INFO, f"Model version: {type(self).__name__}")
@@ -284,6 +361,7 @@ class model_dayabay:
             "parameters.detector_iav_offdiag_scale": path_parameters
             / "detector_iav_offdiag_scale.yaml",
             "parameters.detector_relative": path_parameters / "detector_relative.yaml",
+            "parameters.detector_absolute": path_parameters / "extra/detector_absolute.yaml",
             "parameters.reactor_thermal_power_nominal": path_parameters
             / "reactor_thermal_power_nominal.yaml",
             "parameters.reactor_energy_per_fission": path_parameters
@@ -321,14 +399,15 @@ class model_dayabay:
             f"{self.source_type}",
             "dataset": path_data / "dayabay_dataset/dayabay_ibd_spectra_{}." f"{self.source_type}",
         }
-        match self._final_erec_bin_edges:
-            case Path():
-                cfg_file_mapping["final_erec_bin_edges"] = self._final_erec_bin_edges
-            case ndarray():
-                del cfg_file_mapping["final_erec_bin_edges"]
-
         for cfg_name, path in override_cfg_files.items():
             cfg_file_mapping.update({cfg_name: Path(path)})
+
+        for array_name, array in self._arrays_dict.items():
+            match array:
+                case ndarray():
+                    del cfg_file_mapping[array_name]
+                case Path():
+                    cfg_file_mapping[array_name] = array
 
         return cfg_file_mapping
 
@@ -405,11 +484,11 @@ class model_dayabay:
             NueSurvivalProbability,
         )
         from nested_mapping.tools import remap_items
-        from numpy import arange, concatenate, linspace
+        from numpy import linspace
 
         from .bundles.refine_detector_data import refine_detector_data
         from .bundles.refine_lsnl_data import refine_lsnl_data
-        from .bundles.refine_reactor_data import refine_reactor_data
+        from .bundles.refine_reactor_data_variable_periods import refine_reactor_data
         from .bundles.sync_reactor_detector_data import sync_reactor_detector_data
 
         # Initialize the storage and paths
@@ -418,9 +497,13 @@ class model_dayabay:
         # Read Eν edges for the parametrization of free antineutrino spectrum model
         # Loads the python file and returns variable "edges", which should be defined
         # in the file and has type `ndarray`.
-        antineutrino_model_edges = FileReader.record[
-            cfg_file_mapping["antineutrino_spectrum_segment_edges"]
-        ]["E_neutrino_MeV"]
+        if isinstance(self._arrays_dict["antineutrino_spectrum_segment_edges"], ndarray):
+            antineutrino_model_edges = self._arrays_dict["antineutrino_spectrum_segment_edges"]
+            logger.info(f"Antineutrino model bin edges passed via argument: {antineutrino_model_edges!s}")
+        else:
+            antineutrino_model_edges = FileReader.record[
+                cfg_file_mapping["antineutrino_spectrum_segment_edges"]
+            ]["E_neutrino_MeV"]
 
         # Provide some convenience substitutions for labels
         index_names = {
@@ -786,6 +869,13 @@ class model_dayabay:
                     ("pargroup", "detector", "par"),
                 ),
             )
+
+            # Absolute correlated between detectors efficiency factor
+            load_parameters(
+                path="detector",
+                load=cfg_file_mapping["parameters.detector_absolute"],
+                state="fixed" if self._is_absolute_efficiency_fixed else "variable",
+            )
             # By default extra index is appended at the end of the key (path). A
             # `keys_order` argument is used to change the order of the keys from
             # group.par.detector to group.detector.par so it is easier to access both
@@ -922,8 +1012,8 @@ class model_dayabay:
             in_edges_fine = linspace(0, 12, 241)
             in_edges_costheta = [-1, 1]
 
-            if isinstance(self._final_erec_bin_edges, ndarray):
-                in_edges_final = self._final_erec_bin_edges
+            if isinstance(self._arrays_dict["final_erec_bin_edges"], ndarray):
+                in_edges_final = self._arrays_dict["final_erec_bin_edges"]
                 logger.info(f"Final Erec bin edges passed via argument: {in_edges_final!s}")
             else:
                 in_edges_final = FileReader.record[cfg_file_mapping["final_erec_bin_edges"]][
@@ -2608,6 +2698,7 @@ class model_dayabay:
             Product.replicate(
                 parameters.get_value("all.detector.global_normalization"),
                 parameters.get_dict("selected.detector.parameters_relative.efficiency_factor"),
+                parameters.get_value("all.detector.detector_absolute.efficiency_factor"),
                 name="detector.normalization",
                 replicate_outputs=index["detector"],
             )
@@ -2852,13 +2943,11 @@ class model_dayabay:
             #
             self._covariance_matrix = CovarianceMatrixGroup(store_to="covariance")
 
-            for (
-                name,
-                parameters_source,
-            ) in self.systematic_uncertainties_groups().items():
+            for group in self._covariance_groups:
                 self._covariance_matrix.add_covariance_for(
-                    name, parameters_nuisance_normalized[parameters_source]
-                )
+                    group, parameters_nuisance_normalized[
+                    self.systematic_uncertainties_groups()[group]
+                ])
             self._covariance_matrix.add_covariance_sum()
 
             (
@@ -2866,13 +2955,10 @@ class model_dayabay:
                 >> self._covariance_matrix
             )
 
-            npars_cov = self._covariance_matrix.get_parameters_count()
             list_parameters_nuisance_normalized = list(
                 parameters_nuisance_normalized.walkvalues()
             )
             npars_nuisance = len(list_parameters_nuisance_normalized)
-            if npars_cov != npars_nuisance:
-                raise RuntimeError("Some parameters are missing from covariance matrix")
 
             parinp_mc = ParArrayInput(
                 name="mc.parameters.inputs",
@@ -3100,6 +3186,16 @@ class model_dayabay:
             Sum.replicate(
                 outputs("statistic.nuisance.parts"), name="statistic.nuisance.all"
             )
+            if self._pull_groups:
+                Sum.replicate(
+                    *[
+                        outputs[f"statistic.nuisance.parts.{self.systematic_uncertainties_groups()[group]}"] for group
+                        in self._pull_groups
+                    ],
+                    name="statistic.nuisance.pull_extra"
+                )
+            else:
+                Array.replicate(name="statistic.nuisance.pull_extra", array=[0])
 
             MonteCarlo.replicate(
                 name="data.pseudo.self",
