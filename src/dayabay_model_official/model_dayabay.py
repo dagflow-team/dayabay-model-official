@@ -107,6 +107,8 @@ class model_dayabay:
 
     Technical attributes
     --------------------
+    _source_type : str, default="hdf5"
+        Type of the data to read ("tsv", "hdf5", "root" or "npz").
     _strict : bool, default=True
         Strict mode. Stop execution if:
             - the model is not complete,
@@ -486,7 +488,7 @@ class model_dayabay:
 
         from .bundles.refine_detector_data import refine_detector_data
         from .bundles.refine_lsnl_data import refine_lsnl_data
-        from .bundles.refine_reactor_data import refine_reactor_data
+        from .bundles.refine_reactor_data_variable_periods import refine_reactor_data
         from .bundles.sync_reactor_detector_data import sync_reactor_detector_data
 
         # Initialize the storage and paths
