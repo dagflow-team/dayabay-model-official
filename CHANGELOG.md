@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.3.1] - 2025-11-02
+
+- hotfix: add `absolute_efficiency` gruop for covariance matrix and pull terms. Works with model `v1a`, and `v1a_distorted`.
+
 ## [1.3.0] - 2025-10-31
 
 - feature: add `covariance_groups` parameter to control passed nuisance parameters to covarince matrix, works only with `strict=False`.
