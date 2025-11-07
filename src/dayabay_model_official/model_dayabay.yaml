@@ -219,41 +219,15 @@ daily_data:
         unit: "#"
         xaxis: "Day"
         plotoptions: *daily_plotoptions
-  reactor:
-    power:
-      group:
-        text: "Daily fractional reactor power for {index[0]} during {index[1]}"
-        axis: '$W_i/W_{{\rm tot}}$'
-        xaxis: "Day"
-        plotoptions: *daily_plotoptions
-    fission_fraction:
-      group:
-        text: "Daily fission fraction for {index[1]} in {index[0]} during {index[2]}"
-        axis: '$f_i$'
-        xaxis: "Day"
-        plotoptions: *daily_plotoptions
-    fission_fraction_scaled:
-      group:
-        text: "Corrected (fit) daily fission fraction for {index[1]} in {index[0]} during {index[2]}"
-        axis: '$f_i$'
-        xaxis: "Day"
-        plotoptions: *daily_plotoptions
-    fission_fraction_scaled_abs:
-      group:
-        text: "Corrected (fit) daily fission fraction for {index[1]} in {index[0]} during {index[2]} (absolute values)"
-        axis: '$|f_i|$'
-        xaxis: "Day"
-        plotoptions: *daily_plotoptions
 reactor:
   energy_per_fission_weighted_MeV:
     group:
       text: "Partial energy per fission for {key}\\nweighted with fission fraction"
       axis: '$f_i\overline{{e}}_i$'
-      xaxis: "Day"
       unit: "MeV/fission"
   energy_per_fission_average_MeV:
     group:
-      text: "Average energy per fission in {index[0]} during {index[1]}"
+      text: "Average energy per fission in {index[0]}"
       axis: '$\overline{{e}}$'
       xaxis: "Day"
       unit: "MeV/fission"
@@ -265,25 +239,14 @@ reactor:
     group:
       text: "Reactor {key} fixed (central) thermal power Wth"
       unit: "MeV/s"
-  thermal_power_isotope_MeV_per_second:
+  fission_fraction_scaled:
     group:
-      text: "Fractional thermal power for {index[1]} in {index[0]} during {index[2]}"
-      axis: '$W_i/W_{{\rm tot}}$'
-      xaxis: "Day"
-      unit: "MeV/s"
-  fissions_per_second:
+      text: "Corrected (fit) fission fraction for {index[1]} in {index[0]}"
+      axis: '$f_i$'
+  fission_fraction_scaled_abs:
     group:
-      text: "Fissions per second of {index[1]} in {index[0]} during {index[2]}"
-      axis: "$R$"
-      xaxis: "Day"
-      unit: "#fissions/s"
-  energy_per_fission_snf_weighted_MeV:
-    group:
-      text: "Partial energy per fission for {key}\\nfor spent nuclear fuel, weighted with fission fraction"
-      unit: "MeV/fission"
-  energy_per_fission_snf_average_MeV:
-    text: "Average energy per fission for spent nuclear fuel"
-    unit: "MeV/fission"
+      text: "Corrected (fit) fission fraction for {index[1]} in {index[0]} (absolute values)"
+      axis: '$|f_i|$'
   fissions_per_second_snf:
     group:
       text: "# of fissions per second for {key}\\nfor spent nuclear fuel"
@@ -292,6 +255,12 @@ reactor:
     group:
       text: "Fractional thermal power for {index[1]} in {index[0]}\\nreference for spent nuclear fuel"
       unit: "MeV/s"
+  # fissions_per_second:
+  #   group:
+  #     text: "Fissions per second of {index[1]} in {index[0]} during {index[2]}"
+  #     axis: "$R$"
+  #     xaxis: "Day"
+  #     unit: "#fissions/s"
 eventscount:
   parts:
     nu_main:
@@ -664,33 +633,33 @@ reactor_antineutrino:
         unit: "#ν/s/MeV"
         plotoptions:
           method: "slicesy"
-    neutrino_per_second_snf:
-      group:
-        text: "Rate of ν̅ from spent nuclear fuel from {key},  interpolated"
-        axis: "SNF ν̅ rate"
-        unit: "#ν/s/MeV"
-        plotoptions:
-          method: "slicesy"
+    # neutrino_per_second_snf:
+    #   group:
+    #     text: "Rate of ν̅ from spent nuclear fuel from {key},  interpolated"
+    #     axis: "SNF ν̅ rate"
+    #     unit: "#ν/s/MeV"
+    #     plotoptions:
+    #       method: "slicesy"
 reactor_detector:
-  n_fissions_daily:
-    group:
-      text: "Daily observable # of fissions at {index[2]} for {index[1]} in {index[0]} during {index[3]}"
-      axis: "$N$"
-      unit: "#fissions"
-      xaxis: "Day"
-      plotoptions: *daily_plotoptions
-  n_fissions:
-    group:
-      text: "Observable # of fissions of {index[1]} in {index[0]} in {index[2]} during {index[3]} [#fissions]"
+  # n_fissions_daily:
+  #   group:
+  #     text: "Daily observable # of fissions at {index[2]} for {index[1]} in {index[0]} during {index[3]}"
+  #     axis: "$N$"
+  #     unit: "#fissions"
+  #     xaxis: "Day"
+  #     plotoptions: *daily_plotoptions
+  # n_fissions:
+  #   group:
+  #     text: "Observable # of fissions of {index[1]} in {index[0]} in {index[2]} during {index[3]} [#fissions]"
   n_fissions_n_protons_per_cm2:
     group:
       text: "#fissions × #target protons × baseline factor {key} [#fissions·#protons/cm²]\\nfor main IBD flux"
   n_fissions_n_protons_per_cm2_neq:
     group:
       text: "Scaled (fit) #fissions × #target protons × baseline factor {key} [#fissions·#protons/cm²]\\nfor non-equilibrium IBD flux"
-  livetime_n_protons_per_cm2_snf:
-    group:
-      text: "Scaled (fit) #target protons × effective livetime × baseline factor {key} [#protons·s/cm²]\\nfor spent nuclear fuel IBD flux"
+  # livetime_n_protons_per_cm2_snf:
+  #   group:
+  #     text: "Scaled (fit) #target protons × effective livetime × baseline factor {key} [#protons·s/cm²]\\nfor spent nuclear fuel IBD flux"
   baseline_factor_per_cm2:
     group:
       text: "1/(4πL²) factor {key} [cm⁻²]"
@@ -898,7 +867,7 @@ covariance:
       yunit: "#"
       plotoptions:
         mask_value: 0.0
-    nominal_thermal_power:
+    thermal_power:
       text: "Jacobian for reactor thermal power parameters"
       axis: "$J$"
       xaxis: "Bin"
@@ -993,7 +962,7 @@ covariance:
       unit: "#²"
       axis: '$V_{\rm syst}$'
       plotoptions: *covariance_plotoptions
-    nominal_thermal_power:
+    thermal_power:
       text: "Systematic covariance matrix for reactor thermal power parameters"
       unit: "#²"
       axis: '$V_{\rm syst}$'
@@ -1165,6 +1134,8 @@ statistic:
         energy_per_fission:
           text: "χ² nuisance term for average fission energy parameters"
         nominal_thermal_power:
+          text: "χ² nuisance term for reactor thermal power parameters"
+        thermal_power_scale:
           text: "χ² nuisance term for reactor thermal power parameters"
         snf_scale:
           text: "χ² nuisance term for spent nuclear fuel parameters"

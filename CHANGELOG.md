@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.0] - 2025-11-07
+
+- feature: changed official data from fission fractions granularity to information about total netrino rate.
+- feature: remove test for checking reactor data plots.
+
 ## [1.3.2] - 2025-11-02
 
 - hotfix: `full.covmat.chi2cnp` was removed to avoid confusions. `full.covmat.chi2cnp_alt` wes renamed to `full.covmat.chi2cnp`, it is defined as (18)-(19) equations from the [arXiv: 1903.07185](https://arxiv.org/pdf/1903.07185). Only `v1a` and `v1a_distorted` were updated.
