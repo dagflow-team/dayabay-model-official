@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [1.4.0] - 2025-11-07
 
 - feature: changed official data from fission fractions granularity to information about total netrino rate.
+- feature: remove test for checking reactor data plots.
 
 ## [1.3.2] - 2025-11-02
 
