@@ -16,7 +16,7 @@ from pandas import DataFrame
 # pyright: reportUnusedExpression=false
 
 if TYPE_CHECKING:
-    from typing import KeysView, Literal
+    from typing import KeysView, ValuesView, Literal
 
     from dag_modelling.core.meta_node import MetaNode
     from numpy.typing import NDArray
@@ -86,19 +86,22 @@ class model_dayabay:
             - "normal-stats" - normal fluctuations with statistical,
               errors,
             - "poisson" - Poisson fluctuations.
-    covariance_groups: list[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
-        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fraction", "background_rate",
-        "hm_corr", "hm_uncorr"]], default=[]
-        List of nuicance groups to be added to covariance matrix. If no parameters passed,
-        full covariance matrix will be created.
-    pull_groups: list[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
-        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fraction", "background_rate",
-        "hm_corr", "hm_uncorr"]], default=[]
-        List of nuicance groups to be added to `nuisance.extra_pull`. If no parameters passed, it will add all nuisance parameters.
     antineutrino_spectrum_segment_edges : Path | Sequence[int | float] | NDArray | None, default=None
         Text file with bin edges for the antineutrino spectrum or the edges themselves, which is relevant for the χ² calculation.
     final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
         Text file with bin edges for the final binning or the edges themselves, which is relevant for the χ² calculation.
+    covariance_groups: Sequence[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
+        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fraction", "background_rate",
+        "hm_corr", "hm_uncorr"]], default=[]
+        List of nuicance groups to be added to covariance matrix. If no parameters passed,
+        full covariance matrix will be created.
+    pull_groups: Sequence[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
+        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fraction", "background_rate",
+        "hm_corr", "hm_uncorr"]], default=[]
+        List of nuicance groups to be added to `nuisance.extra_pull`. If no parameters passed, it will add all nuisance parameters.
+    mc_parameters: Sequence
+        List of parameters to be sampled via Gaussian distribution, it contains paths to parameters groups or full paths to parameters.
+        Default values are all nuisance parameters.
     is_absolute_efficiency_fixed : bool, default=True
         Switch detector absolute correlated efficiency from fixed to constrained parameter.
     path_data : Path
@@ -139,6 +142,7 @@ class model_dayabay:
         "monte_carlo_mode",
         "_covariance_groups",
         "_pull_groups",
+        "_mc_parameters",
         "_is_absolute_efficiency_fixed",
         "_arrays_dict",
         "_source_type",
@@ -159,7 +163,6 @@ class model_dayabay:
     spectrum_correction_location: Literal["before-integration", "after-integration"]
     concatenation_mode: Literal["detector", "detector_period"]
     monte_carlo_mode: Literal["asimov", "normal-stats", "poisson"]
-    _arrays_dict: dict[str, Path | NDArray | None]
     _covariance_groups: Sequence[Literal[
             "survival_probability",
             "eres",
@@ -177,10 +180,11 @@ class model_dayabay:
     ]] | KeysView
     _pull_groups: Sequence[Literal[
             "survival_probability", "eres", "lsnl", "iav",
-            "detector_relative", "energy_per_fission", "nominal_thermal_power",
+            "detector_relative", "energy_per_fission", "thermal_power",
             "snf", "neq", "fission_fraction", "background_rate", "hm_corr", "hm_uncorr"
     ]]
     _arrays_dict: dict[str, Path | NDArray | None]
+    _mc_parameters: Sequence | ValuesView
     _is_absolute_efficiency_fixed: bool
     _source_type: Literal["tsv", "hdf5", "root", "npz"]
     _strict: bool
@@ -242,6 +246,7 @@ class model_dayabay:
                 "hm_uncorr",
             ]
     ] = [],
+        mc_parameters: Sequence | ValuesView = [],
         is_absolute_efficiency_fixed: bool = True,
     ):
         """Model initialization.
@@ -297,6 +302,9 @@ class model_dayabay:
                 f"{systematic_groups_pull_covariance_intersect}",
             )
 
+        if not mc_parameters:
+            mc_parameters = self.systematic_uncertainties_groups.values()
+
         from .tools.validate_load_array import validate_load_array
         self._arrays_dict = {
             "antineutrino_spectrum_segment_edges": validate_load_array(antineutrino_spectrum_segment_edges),
@@ -331,6 +339,7 @@ class model_dayabay:
         self.monte_carlo_mode = monte_carlo_mode
         self._covariance_groups = covariance_groups
         self._pull_groups = pull_groups
+        self._mc_parameters = mc_parameters
 
         from .tools.validate_load_array import validate_load_array
         self._arrays_dict = {
@@ -3041,9 +3050,13 @@ class model_dayabay:
                 >> self._covariance_matrix
             )
 
-            list_parameters_nuisance_normalized = list(
-                parameters_nuisance_normalized.walkvalues()
-            )
+            # Here we filtering parameters that would be used in MC sampling
+            list_parameters_nuisance_normalized = []
+            for mc_parameter_suffix in self._mc_parameters:
+                list_parameters_nuisance_normalized.extend([
+                    parameter for parname, parameter in parameters_nuisance_normalized.walkjoineditems()
+                    if parname.startswith(mc_parameter_suffix)
+                ])
             npars_nuisance = len(list_parameters_nuisance_normalized)
 
             parinp_mc = ParArrayInput(
