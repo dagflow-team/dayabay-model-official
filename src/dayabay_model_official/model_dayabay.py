@@ -163,7 +163,6 @@ class model_dayabay:
     spectrum_correction_location: Literal["before-integration", "after-integration"]
     concatenation_mode: Literal["detector", "detector_period"]
     monte_carlo_mode: Literal["asimov", "normal-stats", "poisson"]
-    _arrays_dict: dict[str, Path | NDArray | None]
     _covariance_groups: Sequence[Literal[
             "survival_probability",
             "eres",
@@ -181,7 +180,7 @@ class model_dayabay:
     ]] | KeysView
     _pull_groups: Sequence[Literal[
             "survival_probability", "eres", "lsnl", "iav",
-            "detector_relative", "energy_per_fission", "nominal_thermal_power",
+            "detector_relative", "energy_per_fission", "thermal_power",
             "snf", "neq", "fission_fraction", "background_rate", "hm_corr", "hm_uncorr"
     ]]
     _arrays_dict: dict[str, Path | NDArray | None]
@@ -3051,6 +3050,7 @@ class model_dayabay:
                 >> self._covariance_matrix
             )
 
+            # Here we filtering parameters that would be used in MC sampling
             list_parameters_nuisance_normalized = []
             for mc_parameter_suffix in self._mc_parameters:
                 list_parameters_nuisance_normalized.extend([
