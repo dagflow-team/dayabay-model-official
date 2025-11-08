@@ -30,6 +30,12 @@ def test_model_dayabay(output_path: str):
     plot_graph(graph, storage, output_path=output_path)
 
 
+def test_model_dayabay_mc_parameters():
+    model = model_dayabay(mc_parameters=["survival_probability"])
+
+    assert model.storage["nodes.mc.parameters.toymc"].outputs[0].data.shape[0] == 2
+
+
 def plot_graph(graph: Graph, storage: NodeStorage, output_path: str) -> None:
     GraphDot.from_graph(graph, show="all").savegraph(f"{output_path}/dayabay_v0.dot")
     GraphDot.from_graph(
