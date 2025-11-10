@@ -1,0 +1,151 @@
+#!/usr/bin/env python
+
+"""Plots reactor related time dependent data.
+
+Usage:
+$ ./extras/scripts/dayabay-plot-neutrino-rate-data.py -o "output/reactor_{type}.pdf"
+"""
+
+from __future__ import annotations
+
+from argparse import Namespace
+from pathlib import Path
+
+from dag_modelling.tools.logger import set_verbosity
+from matplotlib import pyplot as plt
+from matplotlib import transforms
+
+from dayabay_model_official import model_dayabay
+
+plt.rcParams.update(
+    {
+        "axes.grid": False,
+        "xtick.minor.visible": True,
+        "ytick.minor.visible": True,
+    }
+)
+
+
+def main(opts: Namespace) -> None:
+    if opts.verbose:
+        set_verbosity(opts.verbose)
+
+    model = model_dayabay(path_data=opts.path_data, parameter_values=opts.par)
+
+    storage = model.storage
+
+    days_storage = storage["outputs.daily_data.days"]
+    # neutrino_rate_storage = storage["outputs.daily_data.reactor.antineutrino_rate_per_s"]
+    neutrino_rate_storage = storage["outputs.daily_data.reactor_neutrino_rate.neutrino_rate_per_s"]
+
+    reactors = ["R1", "R2", "R3", "R4", "R5", "R6"]
+    reactors = {ad: i for i, ad in enumerate(reactors)}
+
+    gridspec_kw = {
+        "hspace": 0,
+        "left": 0.08,
+        "right": 0.92,
+        "bottom": 0.05,
+        "top": 0.95,
+    }
+    figsize = (12, 10)
+    fig_nr, axes_nr = plt.subplots(
+        6,
+        1,
+        sharex=True,
+        figsize=figsize,
+        subplot_kw={"ylabel": r"rate, $s^{-1}$"},
+        gridspec_kw=gridspec_kw,
+    )
+
+    text_offset = transforms.ScaledTranslation(0.04, 0.04, fig_nr.dpi_scale_trans)
+    axes_nr[0].set_title("Neutrino rate")
+
+    labels_added = set()
+
+    plot_kwargs0 = dict(markersize=0.5)
+    plot_kwargs = dict(color="C0", **plot_kwargs0)
+    for (reactor, period), output in neutrino_rate_storage.walkitems():
+        data_days = days_storage[period].data
+
+        reactor_id = reactors[reactor]
+
+        ax_nr = axes_nr[reactor_id]
+        nr_data = output.data
+        mask = nr_data>0
+
+        ax_nr.plot(
+            data_days[mask],
+            nr_data[mask] * 100,
+            ".",
+            **plot_kwargs0,
+        )
+
+        ticks_right = bool(reactor_id % 2)
+        if reactor not in labels_added:
+            ax_nr.text(
+                1,
+                1,
+                reactor,
+                transform=ax_nr.transAxes - text_offset,
+                va="top",
+                ha="right",
+            )
+
+        ax_nr.tick_params(
+            axis="y",
+            which="both",
+            left=True,
+            right=True,
+            labelleft=not ticks_right,
+            labelright=ticks_right,
+        )
+        if ticks_right:
+            ax_nr.yaxis.set_label_position("right")
+
+        labels_added.add(reactor)
+
+    ax = axes_nr[-1]
+    ax.set_xlabel("Day since start of data taking")
+    ax.set_xlim(left=0)
+
+    if opts.output:
+        for plot_type, fig in {
+            "neutrino_rate": fig_nr,
+        }.items():
+            if opts.output == opts.output.format(type="placeholder"):
+                output = Path(opts.output)
+                opts.output = f"{output.stem}_{{type}}{output.suffix}"
+                print("Appending `{type}` to filename: "+opts.output)
+
+            fname = opts.output.format(type=plot_type)
+            fig.savefig(fname)
+            print(f"Save plot: {fname}")
+
+    if opts.show or not opts.output:
+        plt.show()
+
+
+if __name__ == "__main__":
+    from argparse import ArgumentParser
+
+    parser = ArgumentParser(description="Plot time dependent neutrino rate data")
+    parser.add_argument("-v", "--verbose", default=1, action="count", help="verbosity level")
+    parser.add_argument(
+        "--path-data",
+        default=None,
+        help="Path to data",
+    )
+
+    pars = parser.add_argument_group("pars", "setup pars")
+    pars.add_argument("--par", nargs=2, action="append", default=[], help="set parameter value")
+
+    plot = parser.add_argument_group("pars", "plots")
+    plot.add_argument(
+        "-o",
+        "--output",
+        help="output files with `{type}`: `output_{type}.pdf`",
+    )
+    plot.add_argument("-s", "--show", action="store_true", help="show")
+
+    main(parser.parse_args())
