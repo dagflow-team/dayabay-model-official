@@ -9,6 +9,7 @@ $ ./extras/scripts/dayabay-plot-detector-data.py -o "output/detector_{type}.pdf"
 from __future__ import annotations
 
 from argparse import Namespace
+from pathlib import Path
 
 from dag_modelling.tools.logger import set_verbosity
 from matplotlib import pyplot as plt
@@ -135,8 +136,10 @@ def main(opts: Namespace) -> None:
             "eff_livetime": fig_eff_livetime,
             "rate_accidentals": fig_rate_accidentals,
         }.items():
-            if "{type" not in opts.output:
-                raise RuntimeError("Output format should contain {type} for plot type")
+            if opts.output == opts.output.format(type="placeholder"):
+                output = Path(opts.output)
+                opts.output = f"{output.stem}_{{type}}{output.suffix}"
+                print("Appending `{type}` to filename: "+opts.output)
 
             fname = opts.output.format(type=plot_type)
             fig.savefig(fname)
@@ -164,7 +167,7 @@ if __name__ == "__main__":
     plot.add_argument(
         "-o",
         "--output",
-        help='output files (supported format keys: "type", "selection")',
+        help="output files with `{type}`: `output_{type}.pdf`",
     )
     plot.add_argument("-s", "--show", action="store_true", help="show")
 
