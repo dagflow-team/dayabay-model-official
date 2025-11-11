@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-"""Plots reactor related time dependent data.
+"""Plots neutrino rate time dependent data.
 
 Usage:
-$ ./extras/scripts/dayabay-plot-neutrino-rate-data.py -o "output/reactor_{type}.pdf"
+$ ./extras/scripts/dayabay-plot-neutrino-rate-data.py -o "output/neutrino_rate.pdf"
 """
 
 from __future__ import annotations
@@ -64,7 +64,6 @@ def main(opts: Namespace) -> None:
     labels_added = set()
 
     plot_kwargs0 = dict(markersize=0.5)
-    plot_kwargs = dict(color="C0", **plot_kwargs0)
     for (reactor, period), output in neutrino_rate_storage.walkitems():
         data_days = days_storage[period].data
 
@@ -72,7 +71,7 @@ def main(opts: Namespace) -> None:
 
         ax_nr = axes_nr[reactor_id]
         nr_data = output.data
-        mask = nr_data>0
+        mask = nr_data > 0
 
         ax_nr.plot(
             data_days[mask],
@@ -110,17 +109,8 @@ def main(opts: Namespace) -> None:
     ax.set_xlim(left=0)
 
     if opts.output:
-        for plot_type, fig in {
-            "neutrino_rate": fig_nr,
-        }.items():
-            if opts.output == opts.output.format(type="placeholder"):
-                output = Path(opts.output)
-                opts.output = f"{output.stem}_{{type}}{output.suffix}"
-                print("Appending `{type}` to filename: "+opts.output)
-
-            fname = opts.output.format(type=plot_type)
-            fig.savefig(fname)
-            print(f"Save plot: {fname}")
+        fig_nr.savefig(opts.output)
+        print(f"Save plot: {opts.output}")
 
     if opts.show or not opts.output:
         plt.show()
@@ -144,7 +134,7 @@ if __name__ == "__main__":
     plot.add_argument(
         "-o",
         "--output",
-        help="output files with `{type}`: `output_{type}.pdf`",
+        help="output file",
     )
     plot.add_argument("-s", "--show", action="store_true", help="show")
 
