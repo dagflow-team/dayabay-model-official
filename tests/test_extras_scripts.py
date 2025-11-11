@@ -82,16 +82,15 @@ def test_run_dayabay_plot_detector_data():
 
 
 def test_run_dayabay_plot_neutrino_rate_data():
-    output = "output/neutrino_rate_{type}.pdf"
+    output = "output/neutrino_rate.pdf"
 
     stdout, stderr, code = _run_script(
         "./tests/shell/test_dayabay-plot-neutrino-rate-data.sh",
     )
 
     _check_script_result(code, stderr, stdout, None)
-    for type in ["power", "fission_fraction"]:
-        assert f"Save plot: {output.format(type=type)}" in stdout
-        assert os.path.exists(output.format(type=type))
+    assert f"Save plot: {output}" in stdout
+    assert os.path.exists(output)
 
 
 def test_run_dayabay_print_internal_data():
