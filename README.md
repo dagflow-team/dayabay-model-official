@@ -39,7 +39,7 @@ However, you can just copy examples that are listed below and run them where you
 from dayabay_model_official import model_dayabay
 
 model = model_dayabay()
-print(model.storage["outputs.statistic.full.pull.chi2cnp"].data)
+print(model.storage["outputs.statistic.full.covmat.chi2cnp"].data)
 ```
 within `python`
 ```bash
@@ -53,8 +53,9 @@ INFO: Data path: data
 INFO: Concatenation mode: detector_period
 INFO: Spectrum correction mode: exponential
 INFO: Spectrum correction location: before integration
-[0.]
+[705.12741983]
 ```
+It shows non-zero value of chi-squared function because by default it loads `real` data. About choosing `real`/`asimov` data read above.
 8. Also, you may pass custom path to data, if you put `path_data` parameter to model. For example,
 ```python
 from dayabay_model_official import model_dayabay
