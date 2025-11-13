@@ -19,10 +19,6 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
   - [Custom path to model data](#custom-path-to-model-data)
   - [Switch between real and asimov data](#switch-between-real-and-asimov-data)
 
-66:### Simple run
-101:### Custom path to model data
-134:### Switch between real and Asimov data
-
 ## Repositories
 
 - Development/CI: https://git.jinr.ru/dagflow-team/dayabay-model-official
