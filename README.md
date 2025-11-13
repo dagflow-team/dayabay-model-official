@@ -16,8 +16,8 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 - [Minimal working example](#minimal-working-example)
   - [Preparation](#preparation)
   - [extras/mwe/run.py](#extrasmwerunpy)
-  - [extras/mwe/run-custom-data-path.py](#extrasmweruncustomdatapathpy)
-  - [extras/mwe/run-switch-asimov-real-data.py](#extrasmwerunswitchasimovrealdatapy)
+  - [extras/mwe/run-custom-data-path.py](#extrasmweruncustom-data-pathpy)
+  - [extras/mwe/run-switch-asimov-real-data.py](#extrasmwerun-switch-asimov-real-datapy)
 
 
 ## Repositories
@@ -103,7 +103,8 @@ pip install dayabay-model-official
   ```bash
   PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py
   ```
-  **Warning**: before running this example, make sure that you have put data in `dayabay-data-official/npz`. You can do it with `data/` from previous example. Run commands:
+2. Example can be executed: `python extras/mwe/run-custom-data-path.py` or `PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py`
+3. **Warning**: before running this example, make sure that you have put data in `dayabay-data-official/npz`. You can do it with `data/` from previous example. Run commands:
   ```bash
   mkdir dayabay-data-official/
   mv data/ dayabay-data-official/npz/
@@ -111,7 +112,7 @@ pip install dayabay-model-official
 
 ### `extras/mwe/run-switch-asimov-real-data.py`
 
-9. If you want to switch between Asimov and observed data, you need to switch input in the next way
+1. If you want to switch between Asimov and observed data, you need to switch input in the next way
   ```python
   from dayabay_model_official import model_dayabay
 
@@ -125,4 +126,4 @@ pip install dayabay-model-official
   model.switch_data("asimov")
   print("CNP chi-squared (asimov data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
   ```
-  Example can be executed: `python extras/mwe/run-switch-asimov-real-data.py` or `PYTHONPATH=PWD python extras/mwe/run-switch-asimov-real-data.py`
+2. Example can be executed: `python extras/mwe/run-switch-asimov-real-data.py` or `PYTHONPATH=PWD python extras/mwe/run-switch-asimov-real-data.py`
