@@ -13,11 +13,11 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 ## Content
 
 - [Repositories](#repository)
-- [Minimal working example](minimal-working-example)
-  - [Preparation](preparation)
-  - [extras/mwe/run.py](extras/mwe/run.py)
-  - [extras/mwe/run-custom-data-path.py](extras/mwe/run-custom-data-path.py)
-  - [extras/mwe/run-switch-asimov-real-data.py](extras/mwe/run-switch-asimov-real-data.py)
+- [Minimal working example](#minimal-working-example)
+  - [Preparation](#preparation)
+  - [extras/mwe/run.py](#extrasmwerunpy)
+  - [extras/mwe/run-custom-data-path.py](#extrasmweruncustomdatapathpy)
+  - [extras/mwe/run-switch-asimov-real-data.py](#extrasmwerunswitchasimovrealdatapy)
 
 
 ## Repositories
@@ -28,7 +28,7 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 
 ## Daya Bay analysis repository
 
-Several examples of scripts for fitting and plotting results are stored in [dayabay-analysis](https://git.jinr.ru/dagflow-team/dayabay-analysis). Do steps from [preparation section](section) before going to the repository with analysis examples.
+Several examples of scripts for fitting and plotting results are stored in [dayabay-analysis](https://github.com/dagflow-team/dayabay-analysis). Do steps from [preparation section](section) before going to the repository with analysis examples.
 
 ## Minimal working example
 
