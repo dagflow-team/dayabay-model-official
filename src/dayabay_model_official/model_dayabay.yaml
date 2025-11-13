@@ -219,10 +219,46 @@ daily_data:
         unit: "#"
         xaxis: "Day"
         plotoptions: *daily_plotoptions
+  reactor:
+    antineutrino_rate_per_s:
+      group:
+        text: "Daily ν̅ rate from {index[0]} during {index[1]}"
+        axis: "$N$"
+        unit: "#ν/s"
+        xaxis: "Day"
+        plotoptions: *daily_plotoptions
+    thermal_power_average_MeV_per_s:
+      group:
+        text: "Daily average thermal power of {index[0]} during {index[1]}"
+        unit: "MeV/s"
+        xaxis: "Day"
+        plotoptions: *daily_plotoptions
+  reactor_detector:
+    thermal_energy_MeV:
+      group:
+        text: "Daily ovservable energy from {index[0]} at {index[1]} during {index[2]}"
+        unit: "MeV"
+        xaxis: "Day"
+        plotoptions: *daily_plotoptions
 reactor:
+  antineutrinos_per_fission_nominal_average:
+    text: "Nominal average # ν̅ per fission"
+    unit: "#ν/fission"
+  antineutrinos_per_fission_nominal_weighted:
+    group:
+      text: "Nominal average # ν̅ per fission from {index[0]}\\nweighted with fission fractions"
+      unit: "#ν/fission"
+  antineutrinos_per_MeV_nominal_average:
+    text: "Nominal average # ν̅ per MeV"
+    unit: "#ν/MeV"
   energy_per_fission_weighted_MeV:
     group:
-      text: "Partial energy per fission for {key}\\nweighted with fission fraction"
+      text: "Partial energy per fission for {key}\\nweighted with fission fractions"
+      axis: '$f_i\overline{{e}}_i$'
+      unit: "MeV/fission"
+  energy_per_fission_nominal_weighted_MeV:
+    group:
+      text: "Nominal Partial energy per fission for {key}\\nweighted with fission fractions"
       axis: '$f_i\overline{{e}}_i$'
       unit: "MeV/fission"
   energy_per_fission_average_MeV:
@@ -231,36 +267,33 @@ reactor:
       axis: '$\overline{{e}}$'
       xaxis: "Day"
       unit: "MeV/fission"
-  thermal_power_nominal_MeVs:
-    group:
-      text: "Reactor {key} thermal power (fit) Wth"
-      unit: "MeV/s"
+  energy_per_fission_nominal_average_MeV:
+    text: "Nominal average energy per fission"
+    unit: "MeV/fission"
   thermal_power_nominal_MeVs_central:
     group:
       text: "Reactor {key} fixed (central) thermal power Wth"
       unit: "MeV/s"
-  fission_fraction_scaled:
+  fission_fractions_scaled:
     group:
-      text: "Corrected (fit) fission fraction for {index[1]} in {index[0]}"
+      text: "Corrected (fit) fission fractions for {index[1]} in {index[0]}"
       axis: '$f_i$'
-  fission_fraction_scaled_abs:
+  fission_fractions_scaled_abs:
     group:
-      text: "Corrected (fit) fission fraction for {index[1]} in {index[0]} (absolute values)"
+      text: "Corrected (fit) fission fractions for {index[1]} in {index[0]} (absolute values)"
       axis: '$|f_i|$'
+  fission_fractions_per_MeV:
+    group:
+      text: "Fission fractions per average fission energy for {index[1]} in {index[0]}"
+      unit: "MeV⁻¹"
   fissions_per_second_snf:
     group:
       text: "# of fissions per second for {key}\\nfor spent nuclear fuel"
       unit: "#fissions/s"
   thermal_power_snf_isotope_MeV_per_second:
     group:
-      text: "Fractional thermal power for {index[1]} in {index[0]}\\nreference for spent nuclear fuel"
+      text: "Fractional nominal thermal power for {key}\\nreference for spent nuclear fuel"
       unit: "MeV/s"
-  # fissions_per_second:
-  #   group:
-  #     text: "Fissions per second of {index[1]} in {index[0]} during {index[2]}"
-  #     axis: "$R$"
-  #     xaxis: "Day"
-  #     unit: "#fissions/s"
 eventscount:
   parts:
     nu_main:
@@ -315,6 +348,11 @@ eventscount:
         text: "Total # of background events at {index[0]} during {index[1]}\\nfine binning"
         axis: "Background events"
         unit: "#"
+    background_by_source:
+      group:
+        text: "Total # of '{index[0]}' background events at {index[1]}\\nfine binning"
+        axis: "Background events"
+        unit: "#"
     total:
       group:
         text: "# of IBD candidates at {index[0]} during {index[1]}\\nfine binning"
@@ -329,6 +367,11 @@ eventscount:
     background:
       group:
         text: "Total # of background events at {index[0]} during {index[1]}\\nfinal binning"
+        axis: "Background events"
+        unit: "#"
+    background_by_source:
+      group:
+        text: "Total # of '{index[0]}' background events at {index[1]}\\nfinal binning"
         axis: "Background events"
         unit: "#"
     detector_period:
@@ -621,45 +664,45 @@ reactor_antineutrino:
           method: "slicesy"
     neutrino_per_second_isotope:
       group:
-        text: "Partial rate of ν̅ from {index[1]} of {index[0]}, for spent nuclear fuel"
+        text: "Partial rate of ν̅ from {key}\\nfor spent nuclear fuel"
         axis: "SNF ν̅ rate"
         unit: "#ν/s/MeV"
         plotoptions:
           method: "slicesy"
     neutrino_per_second:
+      text: "Rate of ν̅ from from nominal reactor\\nfor spent nuclear fuel"
+      axis: "ν̅ rate (for SNF)"
+      unit: "#ν/s/MeV"
+      plotoptions:
+        method: "slicesy"
+    neutrino_per_second_snf:
       group:
-        text: "Rate of ν̅ from {key}, for spent nuclear fuel"
+        text: "Rate of ν̅ from from spent nuclear fuel for {key}"
         axis: "SNF ν̅ rate"
         unit: "#ν/s/MeV"
         plotoptions:
           method: "slicesy"
-    # neutrino_per_second_snf:
-    #   group:
-    #     text: "Rate of ν̅ from spent nuclear fuel from {key},  interpolated"
-    #     axis: "SNF ν̅ rate"
-    #     unit: "#ν/s/MeV"
-    #     plotoptions:
-    #       method: "slicesy"
 reactor_detector:
-  # n_fissions_daily:
-  #   group:
-  #     text: "Daily observable # of fissions at {index[2]} for {index[1]} in {index[0]} during {index[3]}"
-  #     axis: "$N$"
-  #     unit: "#fissions"
-  #     xaxis: "Day"
-  #     plotoptions: *daily_plotoptions
-  # n_fissions:
-  #   group:
-  #     text: "Observable # of fissions of {index[1]} in {index[0]} in {index[2]} during {index[3]} [#fissions]"
-  n_fissions_n_protons_per_cm2:
+  thermal_energy_MeV:
     group:
-      text: "#fissions × #target protons × baseline factor {key} [#fissions·#protons/cm²]\\nfor main IBD flux"
+      text: "Observable thermal energy of {index[0]} in {index[1]} during {index[2]}"
+      unit: "MeV"
+  energy_n_protons_per_cm2:
+    group:
+      text: "Observable energy × #target protons × baseline factor in {index[0]} at {index[1]} during {index[2]} \\nfor main IBD flux"
+      unit: "MeV·#protons/cm²"
+  n_fissions_n_protons_per_cm2_scaled:
+    group:
+      text: "Observable #fissions × #target protons × baseline factor from {index[1]} in {index[0]} at {index[2]} during {index[3]} \\nscaled (fit)"
+      unit: "#fissions·#protons/cm²"
   n_fissions_n_protons_per_cm2_neq:
     group:
-      text: "Scaled (fit) #fissions × #target protons × baseline factor {key} [#fissions·#protons/cm²]\\nfor non-equilibrium IBD flux"
-  # livetime_n_protons_per_cm2_snf:
-  #   group:
-  #     text: "Scaled (fit) #target protons × effective livetime × baseline factor {key} [#protons·s/cm²]\\nfor spent nuclear fuel IBD flux"
+      text: "Observable #fissions × #target protons × baseline factor from {index[1]} in {index[0]} at {index[2]} during {index[3]} \\nfor non-equilibrium IBD flux, scaled (fit)"
+      unit: "#fissions·#protons/cm²"
+  eff_livetime_n_protons_per_cm2_snf:
+    group:
+      text: "#target protons × effective livetime × baseline factor from {index[0]} at {index[1]} during {index[2]}\\nfor spent nuclear fuel IBD flux, scaled (fit) "
+      unit: "#protons·s/cm²"
   baseline_factor_per_cm2:
     group:
       text: "1/(4πL²) factor {key} [cm⁻²]"
@@ -713,6 +756,11 @@ detector:
         text: "Input coarse Evis(Escint) for LSNL"
         axis: '$E_{\rm vis}$'
         unit: "MeV"
+      evis_coarse_scaled:
+        group:
+          text: "Scaled coarse Evis(Escint) for LSNL for {key}\\nrelative energy scale (fit)"
+          axis: '$E_{\rm vis}$'
+          unit: "MeV"
       relative:
         evis_parts:
           group:
@@ -753,6 +801,14 @@ detector:
       plotoptions: *detector_response_plotoptions
     matrix_background:
       text: "Rebinning matrix for background events"
+      axis: "f"
+      plotoptions: *detector_response_plotoptions
+    matrix_background_by_source:
+      text: "Rebinning matrix for background events"
+      axis: "f"
+      plotoptions: *detector_response_plotoptions
+    matrix_data:
+      text: "Rebinning matrix for data events"
       axis: "f"
       plotoptions: *detector_response_plotoptions
 mc:
@@ -894,8 +950,8 @@ covariance:
       yunit: "#"
       plotoptions:
         mask_value: 0.0
-    fission_fraction:
-      text: "Jacobian for fission fraction parameters"
+    fission_fractions:
+      text: "Jacobian for fission fractions' parameters"
       axis: "$J$"
       xaxis: "Bin"
       xunit: "#"
@@ -977,8 +1033,8 @@ covariance:
       unit: "#²"
       axis: '$V_{\rm syst}$'
       plotoptions: *covariance_plotoptions
-    fission_fraction:
-      text: "Systematic covariance matrix for fission fraction parameters"
+    fission_fractions:
+      text: "Systematic covariance matrix for fission fractions' parameters"
       unit: "#²"
       axis: '$V_{\rm syst}$'
       plotoptions: *covariance_plotoptions
@@ -1129,12 +1185,10 @@ statistic:
         lsnl_scale_a:
           text: "χ² nuisance term for Liquid Scintillator Non-Linearity (LSNL) parameters"
       reactor:
-        fission_fraction_scale:
-          text: "χ² nuisance term for fission fraction uncertainty"
+        fission_fractions_scale:
+          text: "χ² nuisance term for fission fractions' uncertainty"
         energy_per_fission:
           text: "χ² nuisance term for average fission energy parameters"
-        nominal_thermal_power:
-          text: "χ² nuisance term for reactor thermal power parameters"
         thermal_power_scale:
           text: "χ² nuisance term for reactor thermal power parameters"
         snf_scale:
