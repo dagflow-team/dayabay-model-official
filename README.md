@@ -15,10 +15,13 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 - [Repositories](#repository)
 - [Minimal working example](#minimal-working-example)
   - [Preparation](#preparation)
-  - [extras/mwe/run.py](#extrasmwerunpy)
-  - [extras/mwe/run-custom-data-path.py](#extrasmwerun-custom-data-pathpy)
-  - [extras/mwe/run-switch-asimov-real-data.py](#extrasmwerun-switch-asimov-real-datapy)
+  - [Simple run](#simple-run)
+  - [Custom path to data](#custom-path-to-data)
+  - [Switch between real and asimov data](#switch-between-real-and-asimov-data)
 
+66:### Simple run
+101:### Custom path to model data
+134:### Switch between real and Asimov data
 
 ## Repositories
 
@@ -36,6 +39,8 @@ If you want to run examples from `extras/mwe`, clone this repository `git clone 
 However, you can just copy examples that are listed below and run them where you want after installation of package and several others steps:
 
 ### Preparation
+
+Here are described several points of how to start work with `dayabay-official-data` and how to run MWE. Same steps might be useful for [dayabay-analysis](https://github.com/dagflow-team/dayabay-analysis).
 
 1. Install package
 ```bash
@@ -61,7 +66,9 @@ pip install dayabay-model-official
   ```
   **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...`
 
-### `extras/mwe/run.py`
+### Simple run
+
+Let's run model without any additional parameters. AS it is from box.
 
 1. Run script
   ```bash
@@ -94,7 +101,9 @@ pip install dayabay-model-official
   ```
   It shows non-zero value of chi-squared function because by default it loads `real` data. About choosing `real`/`asimov` data read above.
 
-### `extras/mwe/run-custom-data-path.py`
+### Custom path to model data
+
+Sometimes it is useful to load data model from specific directory. For this aim you may want to use `path_data` parameter of `model_dayabay`.
 
 1. Also, you may pass custom path to data, if you put `path_data` parameter to model. For example,
   ```python
@@ -125,7 +134,13 @@ pip install dayabay-model-official
   mv data/ dayabay-data-official/npz/
   ```
 
-### `extras/mwe/run-switch-asimov-real-data.py`
+### Switch between real and Asimov data
+
+`real` data is loaded to model by default. However, it is possible to switch between `real` and `Asmov` datasets.
+
+Short note:
+- `real` means that will be loaded IBD candidates after selection;
+- `asimov` means that data will be replaced with mean observation of model under assumption of mean parameters.
 
 1. If you want to switch between Asimov and observed data, you need to switch input in the next way
   ```python
