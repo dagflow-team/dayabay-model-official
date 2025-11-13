@@ -29,20 +29,17 @@ However, you can just copy examples that are listed below and run them where you
 
 1. Install package `pip install dayabay-model-official`
 2. Install required packages: `pip install -r requirements`
-3. Clone the repository with Daya Bay data `git clone https://github.com/dagflow-team/dayabay-data-official`
-  - Make sure that you have `git-lfs` in your system or install it
-  - After installing `git-lfs`, change directory to `dayabay-data-official` and run command `git lfs pull` to download more files
-  - Check any file that it was properly uploaded: `cat parameters-common/reactor_antineutrino_spectrum_edges.tsv`
-  - Go back to the analysis directory `cd ../`
-  - More details on how to work with data repository you can find in [README.md of the data repository](https://github.com/dagflow-team/dayabay-data-official)
-4. Create soft links `ln -s dayabay-data-official/hdf5 data`
-5. Set `PYTHONPATH` variable to the current directory: `set PYTHONPATH=$PHYTHONPATH:$PWD`. **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...`
+3. Download archive from the provided storages by email (check email from Maxim Gonchar 13 November 2025) and unpack it
+  - Download archive `dayabay_data_v2-npz.zip`
+  - Unpack archive `dayabay_data_v2-npz.zip`: via GUI or just run command `unzip /path/to/dayabay_data_v2-npz.zip -d ./`. **WARNING**: unpacking might cause overwritting of `README.md`. Ignore it and press `N`+`Enter`
+  - Rename data directory from `npz/` to `data/` via GUI or  just run command `mv npz/ data/`
+4. Update `PYTHONPATH` variable to the current directory: `export PYTHONPATH=$PHYTHONPATH:$PWD`. **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...`
 6. Run script `python extras/mwe/run.py` or `PYTHONPATH=PWD python extras/mwe/run.py`
 ```python
 from dayabay_model_official import model_dayabay
 
 model = model_dayabay()
-print(model.storage["outputs.statistic.full.pull.chi2p"].data)
+print(model.storage["outputs.statistic.full.pull.chi2cnp"].data)
 ```
 within `python`
 ```bash
@@ -63,9 +60,14 @@ INFO: Spectrum correction location: before integration
 from dayabay_model_official import model_dayabay
 
 model = model_dayabay(path_data="dayabay-data-official/npz")
-print(model.storage["outputs.statistic.full.pull.chi2p"].data)
+print(model.storage["outputs.statistic.full.pull.chi2cnp"].data)
 ```
 Example can be executed: `python extras/mwe/run-custom-data-path.py` or `PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py`
+**Warning**: before running this example, make sure that you have put data in `dayabay-data-official/npz`. You can do it with `data/` from previous example. Run commands:
+```bash
+mkdir dayabay-data-official/
+mv data/ dayabay-data-official/npz/
+```
 
 9. If you want to switch between Asimov and observed data, you need to switch input in the next way
 ```python
@@ -73,12 +75,12 @@ from dayabay_model_official import model_dayabay
 
 model = model_dayabay(path_data="dayabay-data-official/npz")
 
-print(model.storage["outputs.statistic.full.pull.chi2p"].data)
+print("CNP chi-squared (default data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
 
 model.switch_data("real")
-print(model.storage["outputs.statistic.full.pull.chi2p"].data)
+print("CNP chi-squared (real data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
 
 model.switch_data("asimov")
-print(model.storage["outputs.statistic.full.pull.chi2p"].data)
+print("CNP chi-squared (asimov data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
 ```
 Example can be executed: `python extras/mwe/run-switch-asimov-real-data.py` or `PYTHONPATH=PWD python extras/mwe/run-switch-asimov-real-data.py`
