@@ -33,7 +33,7 @@ _SYSTEMATIC_UNCERTAINTIES_GROUPS = {
     "thermal_power": "reactor.thermal_power_scale",
     "snf": "reactor.snf_scale",
     "neq": "reactor.nonequilibrium_scale",
-    "fission_fraction": "reactor.fission_fraction_scale",
+    "fission_fractions": "reactor.fission_fractions_scale",
     "background_rate": "background",
     "hm_corr": "reactor_antineutrino.spectrum_uncertainty.corr",
     "hm_uncorr": "reactor_antineutrino.spectrum_uncertainty.uncorr",
@@ -148,6 +148,7 @@ class model_dayabay:
         "_source_type",
         "_strict",
         "_close",
+        "_process_labels",
         "_covariance_matrix",
         "_frozen_nodes",
         "_random_generator",
@@ -173,7 +174,7 @@ class model_dayabay:
             "thermal_power",
             "snf",
             "neq",
-            "fission_fraction",
+            "fission_fractions",
             "background_rate",
             "hm_corr",
             "hm_uncorr",
@@ -181,7 +182,7 @@ class model_dayabay:
     _pull_groups: Sequence[Literal[
             "survival_probability", "eres", "lsnl", "iav",
             "detector_relative", "energy_per_fission", "thermal_power",
-            "snf", "neq", "fission_fraction", "background_rate", "hm_corr", "hm_uncorr"
+            "snf", "neq", "fission_fractions", "background_rate", "hm_corr", "hm_uncorr"
     ]]
     _arrays_dict: dict[str, Path | NDArray | None]
     _mc_parameters: Sequence | ValuesView
@@ -189,6 +190,7 @@ class model_dayabay:
     _source_type: Literal["tsv", "hdf5", "root", "npz"]
     _strict: bool
     _close: bool
+    _process_labels: bool
     _random_generator: Generator
     _covariance_matrix: MetaNode
     _frozen_nodes: dict[str, tuple]
@@ -198,6 +200,7 @@ class model_dayabay:
         *,
         strict: bool = True,
         close: bool = True,
+        process_labels: bool = True,
         override_indices: Mapping[str, Sequence[str]] = {},
         override_cfg_files: Mapping[str, str] = {},
         leading_mass_splitting_3l_name: Literal["DeltaMSq32", "DeltaMSq31"] = "DeltaMSq32",
@@ -223,7 +226,7 @@ class model_dayabay:
                 "thermal_power",
                 "snf",
                 "neq",
-                "fission_fraction",
+                "fission_fractions",
                 "background_rate",
                 "hm_corr",
                 "hm_uncorr",
@@ -240,7 +243,7 @@ class model_dayabay:
                 "thermal_power",
                 "snf",
                 "neq",
-                "fission_fraction",
+                "fission_fractions",
                 "background_rate",
                 "hm_corr",
                 "hm_uncorr",
@@ -264,6 +267,7 @@ class model_dayabay:
         """
         self._strict = strict
         self._close = close
+        self._process_labels = process_labels
 
         assert spectrum_correction_interpolation_mode in {"linear", "exponential"}
         assert spectrum_correction_location in {
@@ -409,8 +413,8 @@ class model_dayabay:
             / "detector_iav_offdiag_scale.yaml",
             "parameters.detector_relative": path_parameters / "detector_relative.yaml",
             "parameters.detector_absolute": path_parameters / "extra/detector_absolute.yaml",
-            "parameters.neutrinos_per_fission": path_parameters
-            / "neutrinos_per_fission_huber_mueller.yaml",
+            "parameters.antineutrinos_per_fission": path_parameters
+            / "antineutrinos_per_fission_huber_mueller.yaml",
             "parameters.reactor_thermal_power_nominal": path_parameters
             / "reactor_thermal_power_nominal.yaml",
             "parameters.reactor_thermal_power_uncertainty": path_parameters
@@ -422,8 +426,8 @@ class model_dayabay:
             / "reactor_nonequilibrium_correction.yaml",
             "parameters.reactor_fission_fractions": path_parameters
             / "reactor_fission_fractions.yaml",
-            "parameters.reactor_fission_fraction_scale": path_parameters
-            / "reactor_fission_fraction_scale.yaml",
+            "parameters.reactor_fission_fractions_scale": path_parameters
+            / "reactor_fission_fractions_scale.yaml",
             "parameters.background_rate_scale_accidentals": path_parameters
             / "background_rate_scale_accidentals.yaml",
             "parameters.background_rates_uncorrelated": path_parameters
@@ -443,7 +447,7 @@ class model_dayabay:
             "snf_correction": path_data / f"snf_correction.{self.source_type}",
             "daily_detector_data": path_data
             / f"dayabay_dataset/dayabay_daily_detector_data.{self.source_type}",
-            "daily_neutrino_rate_data": path_data / f"neutrino_rate.{self.source_type}",
+            "daily_antineutrino_rate_data": path_data / f"neutrino_rate.{self.source_type}",
             "iav_matrix": path_data / f"detector_iav_matrix.{self.source_type}",
             "lsnl_curves": path_data / f"detector_lsnl_curves.{self.source_type}",
             "background_spectra": path_data / "dayabay_dataset/dayabay_background_spectra_{}."
@@ -612,15 +616,23 @@ class model_dayabay:
                 "amc",
                 "alpha_neutron",
             ),
+            # A separate list of backgrounds, that are used in a time independent way, i.e. their
+            # rate is same every day, although may be different during different periods of data
+            # taking.
             "background_stable": (
                 "lithium_helium",
                 "fast_neutrons",
                 "amc",
                 "alpha_neutron",
-            ),  # TODO: doc
-            "background_site_correlated": ("lithium_helium", "fast_neutrons"),  # TODO: doc
-            "background_not_site_correlated": ("accidentals", "amc", "alpha_neutron"),  # TODO: doc
-            "background_not_correlated": ("accidentals", "alpha_neutron"),  # TODO: doc
+            ),
+            # A list of backgrounds, rates of which are correlated between detectors of the same
+            # site.
+            "background_site_correlated": ("lithium_helium", "fast_neutrons"),
+            # A list of backgrounds, rates of which are uncorrelated between detectors of the same
+            # site.
+            "background_not_site_correlated": ("accidentals", "amc", "alpha_neutron"),
+            # A list of backgrounds, rates of which are uncorrelated between detectors.
+            "background_not_correlated": ("accidentals", "alpha_neutron"),
             # Experimental sites
             "site": ("EH1", "EH2", "EH3"),
             # Fissile isotopes
@@ -631,14 +643,14 @@ class model_dayabay:
             # Nuclear reactors
             "reactor": ("R1", "R2", "R3", "R4", "R5", "R6"),
             # Sources of antineutrinos:
-            #     - "nu_main": for antineutrinos from reactor cores with no
-            #                  Non-Equilibrium correction applied
-            #     - "nu_neq": antineutrinos from Non-Equilibrium correction
-            #     - "nu_snf": antineutrinos from Spent Nuclear Fuel
+            #     - "nu_main": for antineutrinos from reactor cores with no Non-Equilibrium
+            #                  correction applied.
+            #     - "nu_neq": antineutrinos from Non-Equilibrium correction.
+            #     - "nu_snf": antineutrinos from Spent Nuclear Fuel.
             "antineutrino_source": ("nu_main", "nu_neq", "nu_snf"),
             # Model related antineutrino spectrum correction type:
-            #     - uncorrelated
-            #     - correlated
+            #     - uncorrelated.
+            #     - correlated.
             "antineutrino_unc": ("uncorr", "corr"),
             # Part of the Liquid scintillator non-linearity (LSNL) parametrization
             "lsnl": ("nominal", "pull0", "pull1", "pull2", "pull3"),
@@ -715,9 +727,8 @@ class model_dayabay:
                 items.append(it)
             combinations[combname] = tuple(items)
 
-        # Special treatment is needed for combinations of antineutrino_source and isotope as
-        # nu_neq is related to only a fraction of isotopes, while nu_snf does not index
-        # isotopes at all
+        # Special treatment is needed for combinations of antineutrino_source and isotope as nu_neq
+        # is related to only a fraction of isotopes, while nu_snf does not index isotopes at all
         combinations["antineutrino_source.reactor.isotope.detector"] = (
             tuple(("nu_main",) + cmb for cmb in combinations["reactor.isotope.detector"])
             + tuple(("nu_neq",) + cmb for cmb in combinations["reactor.isotope_neq.detector"])
@@ -728,54 +739,53 @@ class model_dayabay:
         # includes:
         # - graph - the graph instance.
         #     + All the nodes are added to the graph while graph is open.
-        #     + On the exit from the context the graph closes itself, which triggers
-        #       allocation of memory for the calculations.
-        # - storage - nested dictionary, which is used to store all the created
-        #   elements: nodes, outputs, parameters, data items, etc.
-        # - filereader - manages reading the files
-        #     + ensures, that the input files are opened only once
-        #     + closes the files upon the exit of the context
+        #     + On the exit from the context the graph closes itself, which triggers allocation of
+        #       memory for the calculations.
+        # - storage - nested dictionary, which is used to store all the created elements: nodes,
+        #           outputs, parameters, data items, etc.
+        # - filereader - manages reading the files.
+        #     + ensures, that the input files are opened only once.
+        #     + closes the files upon the exit of the context.
         self.graph = Graph(close_on_exit=self._close, strict=self._strict)
 
         with self.graph, storage, FileReader:
-            # Load all the parameters, necessary for the model. The parameters are
-            # divided into three lists:
-            # - constant - parameters are not expected to be modified during the
-            #   analysis and thus are not passed to the minimizer.
-            # - free - parameters that should be minimized and have no constraints
-            # - constrained - parameters that should be minimized and have constraints.
-            #   The constraints are defined by:
-            #   + central values and uncertainties
-            #   + central vectors and covariance matrices
+            # Load all the parameters, necessary for the model. The parameters are divided into
+            # three lists:
+            # - constant - parameters are not expected to be modified during the analysis and thus
+            #            are not passed to the minimizer.
+            # - free - parameters that should be minimized and have no constraints.
+            # - constrained - parameters that should be minimized and have constraints. The
+            #               constraints are defined by:
+            #   + central values and uncertainties.
+            #   + central vectors and covariance matrices.
             #
             # additionally the following lists are provided
-            # - all - all the parameters, including fixed, free and constrained
-            # - variable - free and constrained parameters
-            # - normalized - a shadow definition of the constrained parameters. Each
-            #   normalized parameter has value=0 when the constrained parameter is at
-            #   its central value, +1, when it is offset by 1σ. The correlations,
-            #   defined by the covariance matrices are properly treated. The conversion
-            #   works the both ways: when normalized parameter is modified, the related
-            #   constrained parameters are changed as well and vice versa. The
-            #   parameters from this list are used to build the nuisance part of the χ²
-            #   function.
+            # - all - all the parameters, including fixed, free and constrained.
+            # - variable - free and constrained parameters.
+            # - normalized - a shadow definition of the constrained parameters. Each normalized
+            #                parameter has value=0 when the constrained parameter is at its central
+            #                value, +1, when it is offset by 1σ. The correlations, defined by the
+            #                covariance matrices are properly treated. The conversion works the both
+            #                ways: when normalized parameter is modified, the related constrained
+            #                parameters are changed as well and vice versa. The parameters from this
+            #                list are used to build the nuisance part of the χ² function.
             #
-            # All the parameters are collected in the storage - a nested dictionary,
-            # which can handle path-like keys, with "folders" split by periods:
-            # - storage["parameters.all"] - storage with all the parameters
-            # - storage["parameters", "all"] - the same storage with all the parameters
+            # All the parameters are collected in the storage - a nested dictionary, which can
+            # handle path-like keys, with "folders" split by periods:
+            # - storage["parameters.all"] - storage with all the parameters.
+            # - storage["parameters", "all"] - the same storage with all the parameters.
             # - storage["parameters.all.survival_probability.SinSq2Theta12"] - neutrino oscillation
-            #   parameter sin²2θ₁₂
+            #   parameter sin²2θ₁₂.
             # - storage["parameters.constrained.survival_probability.SinSq2Theta12"] - same neutrino
             #   oscillation parameter sin²2θ₁₂ in the list of constrained parameters.
             # - storage["parameters.normalized.survival_probability.SinSq2Theta12"] - shadow
-            #   (nuisance) parameter for sin²2θ₁₂.
+            # (nuisance) parameter for sin²2θ₁₂.
             #
-            # The constrained parameter has fields `value`, `normvalue`, `central`, and
-            # `sigma`, which could be read to get the current value of the parameter,
-            # normalized value, central value, and uncertainty. The assignment to the
-            # fields changes the values. Additionally fields `sigma_relative` and
-            # `sigma_percent` may be used to get and set the relative uncertainty.
+            # The constrained parameter has fields `value`, `normvalue`, `central`, and `sigma`,
+            # which could be read to get the current value of the parameter, normalized value,
+            # central value, and uncertainty. The assignment to the fields changes the values.
+            # Additionally fields `sigma_relative` and `sigma_percent` may be used to get and set
+            # the relative uncertainty.
             # ```python
             # p = storage["parameters.all.survival_probability.SinSq2Theta12"]
             # print(p)        # print the description
@@ -785,11 +795,10 @@ class model_dayabay:
             # p.normvalue = 1 # set the value to central+1sigma
             # ```
             #
-            # The non-constrained parameter lacks `central`, `sigma`, `normvalue`, etc
-            # fields and is controlled only by `value`. The normalized parameter does
-            # have `central` and `sigma` fields, but they are read only. The effect of
-            # changing `value` field of the normalized parameter is the same as changing
-            # `normvalue` field of its corresponding parameter.
+            # The non-constrained parameter lacks `central`, `sigma`, `normvalue`, etc fields and is
+            # controlled only by `value`. The normalized parameter does have `central` and `sigma`
+            # fields, but they are read only. The effect of changing `value` field of the normalized
+            # parameter is the same as changing `normvalue` field of its corresponding parameter.
             #
             # ```python
             # np = storage["parameters.normalized.survival_probability.SinSq2Theta12"]
@@ -801,9 +810,9 @@ class model_dayabay:
             # ```
             #
             # Load oscillation parameters from 3 configuration files:
-            # - Free sin²2θ₁₃ and Δm²₃₂
-            # - Constrained sin²2θ₁₃ and Δm²₃₂
-            # - Fixed: Neutrino Mass Ordering
+            # - Free sin²2θ₁₃ and Δm²₃₂.
+            # - Constrained sin²2θ₁₃ and Δm²₃₂.
+            # - Fixed: Neutrino Mass Ordering.
             load_parameters(
                 path="survival_probability",
                 load=cfg_file_mapping["parameters.survival_probability"],
@@ -820,38 +829,38 @@ class model_dayabay:
             )
 
             # The parameters are located in "parameters.survival_probability" folder as defined by
-            # the `path` argument.
-            # The annotated table with values may be then printed for any storage as
+            # the `path` argument. The annotated table with values may be then printed for any
+            # storage as
             # ```python
             # print(storage["parameters.all.survival_probability"].to_table())
             # print(storage.get_dict("parameters.all.survival_probability").to_table())
             # ```
-            # the second line does the same, but ensures that the object, obtained from
-            # a storage is another nested dictionary, not a parameter.
+            # the second line does the same, but ensures that the object, obtained from a storage is
+            # another nested dictionary, not a parameter.
             #
-            # The `joint_nuisance` options instructs the loader to provide a combined
-            # nuisance term for the both the parameters, rather then two of them. The
-            # nuisance terms for created constrained parameters are located in
-            # "outputs.statistic.nuisance.parts" and may be printed with:
+            # The `joint_nuisance` options instructs the loader to provide a combined nuisance term
+            # for the both the parameters, rather then two of them. The nuisance terms for created
+            # constrained parameters are located in "outputs.statistic.nuisance.parts" and may be
+            # printed with:
             # ```python
             # print(storage["outputs.statistic.nuisance"].to_table())
             # ```
-            # The outputs are typically read-only. They are affected when the parameters
-            # are modified and the relevant values are calculated upon request. In this
-            # case, when the table is printed.
+            # The outputs are typically read-only. They are affected when the parameters are
+            # modified and the relevant values are calculated upon request. In this case, when the
+            # table is printed.
 
             # Load fixed parameters for Inverse Beta Decay (IBD) cross section:
-            # - particle masses and lifetimes
-            # - constants for Vogel-Beacom IBD cross section
+            # - particle masses and lifetimes.
+            # - constants for Vogel-Beacom IBD cross section.
             load_parameters(path="ibd", load=cfg_file_mapping["parameters.pdg_constants"])
             load_parameters(path="ibd.csc", load=cfg_file_mapping["parameters.ibd_constants"])
 
             # Load the conversion constants from metric to natural units:
-            # - reactor thermal power
-            # - the argument of oscillation probability
-            # `scipy.constants` are used to provide the numbers.
-            # There are no constants, except maybe 1, 1/3 and π, defined within the
-            # code. All the numbers are read based on the configuration files.
+            # - reactor thermal power.
+            # - the argument of oscillation probability.
+            # `scipy.constants` are used to provide the numbers. There are no constants, except
+            # maybe 1, 1/3 and π, defined within the code. All the numbers are read based on the
+            # configuration files.
             load_parameters(
                 path="conversion", load=cfg_file_mapping["parameters.conversion_thermal_power"]
             )
@@ -861,19 +870,24 @@ class model_dayabay:
                 load=cfg_file_mapping["parameters.conversion_survival_probability"],
             )
 
-            # TODO
+            # Load constants: number of neutrinos above IBD threshold released per fission for each
+            # isotope, which is used to compute total neutrino rate for each reactor (input data
+            # provided). For the reference these numbers are computed based on the Huber-Mueller
+            # antineutrino spectra, exponentially interpolated and extrapolated. The exact IBD
+            # threshold is used. These numbers will be used to switch from total neutrino rate to
+            # average fission rates per isotope, so any antineutrino spectra may be used as input.
             load_parameters(
-                path="reactor", load=cfg_file_mapping["parameters.neutrinos_per_fission"]
+                path="reactor", load=cfg_file_mapping["parameters.antineutrinos_per_fission"]
             )
 
             # Load reactor-detector baselines
             load_parameters(load=cfg_file_mapping["parameters.baselines"])
 
             # IBD and detector normalization parameters:
-            # - free global IBD normalization factor
+            # - free global IBD normalization factor.
             # - fixed detector efficiency (variation is managed by uncorrelated
-            #   "detector_relative.efficiency_factor")
-            # - fixed correction to the number of protons in each detector
+            #   "detector_relative.efficiency_factor").
+            # - fixed correction to the number of protons in each detector.
             load_parameters(
                 path="detector", load=cfg_file_mapping["parameters.detector_normalization"]
             )
@@ -888,11 +902,11 @@ class model_dayabay:
             )
 
             # Detector energy scale parameters:
-            # - constrained correlated between detectors energy resolution parameters
-            # - constrained correlated between detectors Liquid Scintillator
-            #   Non-Linearity (LSNL) parameters
-            # - constrained uncorrelated between detectors energy distortion related to
-            #   Inner Acrylic Vessel
+            # - constrained correlated between detectors energy resolution parameters.
+            # - constrained correlated between detectors Liquid Scintillator Non-Linearity (LSNL)
+            #   parameters.
+            # - constrained uncorrelated between detectors energy distortion related to Inner
+            #   Acrylic Vessel.
             load_parameters(path="detector", load=cfg_file_mapping["parameters.detector_eres"])
             load_parameters(
                 path="detector",
@@ -904,18 +918,17 @@ class model_dayabay:
                 load=cfg_file_mapping["parameters.detector_iav_offdiag_scale"],
                 replicate=index["detector"],
             )
-            # Here we use `replicate` argument and pass a list of values. The parameters
-            # are replicated for each index value. So 4 parameters for LSNL are created
-            # and 8 parameters of IAV are created. The index values are used to
-            # construct the path to parameter. See:
+            # Here we use `replicate` argument and pass a list of values. The parameters are
+            # replicated for each index value. So 4 parameters for LSNL are created and 8 parameters
+            # of IAV are created. The index values are used to construct the path to parameter. See:
             # ```python
             # print(storage["outputs.statistic.nuisance.parts"].to_table())
             # ```
             # which contains parameters "AD11", "AD12", etc.
 
             # Relative uncorrelated between detectors parameters:
-            # - relative efficiency factor (constrained)
-            # - relative energy scale factor (constrained)
+            # - relative efficiency factor (constrained).
+            # - relative energy scale factor (constrained).
             # the parameters of each detector are correlated between each other.
             load_parameters(
                 path="detector",
@@ -933,22 +946,20 @@ class model_dayabay:
                 load=cfg_file_mapping["parameters.detector_absolute"],
                 state="fixed" if self._is_absolute_efficiency_fixed else "variable",
             )
-            # By default extra index is appended at the end of the key (path). A
-            # `keys_order` argument is used to change the order of the keys from
-            # group.par.detector to group.detector.par so it is easier to access both
-            # the parameters of a single detector.
+            # By default extra index is appended at the end of the key (path). A `keys_order`
+            # argument is used to change the order of the keys from group.par.detector to
+            # group.detector.par so it is easier to access both the parameters of a single detector.
 
             # Load reactor related parameters:
-            # - constrained nominal thermal power
-            # - constrained thermal power uncertainty, uncorrelated between reactors
-            # - constrained mean energy release per fission
-            # - fixed values of mean fission fractions
-            # - constrained Non-EQuilibrium (NEQ) correction scale
-            # - constrained Spent Nuclear Fuel (SNF) scale
+            # - constrained nominal thermal power.
+            # - constrained thermal power uncertainty, uncorrelated between reactors.
+            # - constrained mean energy release per fission.
+            # - fixed values of mean fission fractions.
+            # - constrained Non-EQuilibrium (NEQ) correction scale.
+            # - constrained Spent Nuclear Fuel (SNF) scale.
             load_parameters(
                 path="reactor",
                 load=cfg_file_mapping["parameters.reactor_thermal_power_nominal"],
-                replicate=index["reactor"],
             )
             load_parameters(
                 path="reactor",
@@ -973,7 +984,7 @@ class model_dayabay:
                 replicate=combinations["reactor.isotope_neq"],
             )
             # The nominal thermal power is replicated for each reactor, making its
-            # uncertainty uncorrelated. Energy per fission (and fission fraction) has
+            # uncertainty uncorrelated. Energy per fission (and fission fractions) has
             # distinct value (and uncertainties) for each isotope, therefore the
             # configuration files have an entry for each index and `replicate` argument
             # is not required. SNF and NEQ corrections are made uncorrelated between the
@@ -987,7 +998,7 @@ class model_dayabay:
             # index is modified to have `isotope` as the innermost part.
             load_parameters(
                 path="reactor",
-                load=cfg_file_mapping["parameters.reactor_fission_fraction_scale"],
+                load=cfg_file_mapping["parameters.reactor_fission_fractions_scale"],
                 replicate=index["reactor"],
                 keys_order=(
                     ("par", "isotope", "reactor"),
@@ -1043,20 +1054,19 @@ class model_dayabay:
 
             # Provide a few variable for handy read/write access of the model objects,
             # including:
-            # - `nodes` - nested dictionary with nodes. Node is an instantiated function
-            #   and is a main building block of the model. Nodes have inputs (function
-            #   arguments) and outputs (return values). The model is built by connecting
-            #   the outputs of the nodes to inputs of the following nodes.
-            # - `inputs` - storage for not yet connected inputs. The inputs are removed
-            #   from the storage after connection and the storage is expected to be
-            #   empty by the end of the model construction
-            # - `outputs` - the return values of the functions used in the model. A
-            #   single output contains a single numpy array. **All** the final and
-            #   intermediate data may be accessed via outputs. Note: the function
-            #   evaluation is triggered by reading the output.
-            # - `data` - storage with raw (input) data arrays. It is used as an
-            #   intermediate storage, populated with `load_graph_data` and
-            #   `load_record_data` methods.
+            # - `nodes` - nested dictionary with nodes. Node is an instantiated function and is a
+            #           main building block of the model. Nodes have inputs (function arguments) and
+            #           outputs (return values). The model is built by connecting the outputs of the
+            #           nodes to inputs of the following nodes.
+            # - `inputs` - storage for not yet connected inputs. The inputs are removed from the
+            #            storage after connection and the storage is expected to be empty by the end
+            #            of the model construction
+            # - `outputs` - the return values of the functions used in the model. A single output
+            #             contains a single numpy array. **All** the final and intermediate data may
+            #             be accessed via outputs. Note: the function evaluation is triggered by
+            #             reading the output.
+            # - `data` - storage with raw (input) data arrays. It is used as an intermediate
+            #          storage, populated with `load_graph_data` and `load_record_data` methods.
             # - `parameters` - already populated storage with parameters.
             nodes = storage.create_child("nodes")
             inputs = storage.create_child("inputs")
@@ -1068,10 +1078,10 @@ class model_dayabay:
             # In this section the actual parts of the calculation are created as nodes.
             # First of all the binning is defined for the histograms.
             # - internal binning for the integration: 240 bins of 50 keV from 0 to 241.
-            # - final binning for the statistical analysis: 20 keV from 1.3 MeV to 2 MeV
-            #   with two wide bins below from 0.7 MeV and above up to 12 MeV.
-            # - cosθ (positron angle) edges [-1,1] are defined explicitly for the
-            #   integration of the Inverse Beta Decay (IBD) cross section.
+            # - final binning for the statistical analysis: 20 keV from 1.3 MeV to 2 MeV with two
+            #   wide bins below from 0.7 MeV and above up to 12 MeV.
+            # - cosθ (positron angle) edges [-1,1] are defined explicitly for the integration of the
+            #   Inverse Beta Decay (IBD) cross section.
             in_edges_fine = linspace(0, 12, 241)
             in_edges_costheta = [-1, 1]
 
@@ -1114,8 +1124,7 @@ class model_dayabay:
             # - Enu - neutrino energy.
             # - Edep - deposited energy of a positron.
             # - Escint - energy, converted to the scintillation light.
-            # - Evis - visible energy: scintillation energy after non-linearity
-            #   correction.
+            # - Evis - visible energy: scintillation energy after non-linearity correction.
             # - Erec - reconstructed energy: after smearing.
             View.replicate(name="edges.energy_enu", output=edges_energy_common)
             edges_energy_edep, _ = View.replicate(
@@ -1682,7 +1691,11 @@ class model_dayabay:
             )
 
             # Alternative post-fit spectrum correction.
-            # TODO: doc
+            # The default antineutrino spectrum correction is applied before the integration to the
+            # continuous input antineutrino spectra. An alternative approach is provided, where the
+            # correction is applied after the integration to the IBD histograms. Therefore the
+            # correction curve is interpolated at the bin centers. The following lines define the
+            # interpolation nodes.
             Interpolator.replicate(
                 method="exp",
                 names={
@@ -1915,9 +1928,7 @@ class model_dayabay:
             # - Detector live time in seconds.
             # - Efficiency, related to muon veto and multiplicity cut.
             # - Rate of accidental events in inverse seconds.
-            # For reactors the data is ~monthly (TODO: specify). It includes:
-            # - Average thermal power, relative to the nominal value.
-            # - Average fission fractions for each isotope.
+            # For reactors the data is weekly: total antineutrino rate per reactor.
             #
             # A function `load_record_data` to load table data, which in general works
             # similarly to `load_graph` and `load_graph_data`. The function reads
@@ -1965,23 +1976,25 @@ class model_dayabay:
             # The reactor data is stored and read in a similar way and contains the
             # following columns:
             # - period - number of period for which data is presented, 0-based.
-            # - day - number of the first day of the period relative to the start of the
-            #         data taking, 0-based.
-            # - n_days - length of the period in days.
-            # - power - average thermal power, relative to nominal.
-            # - u235, u238, pu239, pu241 - fission fractions of corresponding isotope.
-            # TODO
+            # - day - number of the first day of the period relative to the start of the data
+            #       taking, 0-based.
+            # - n_det_mask — binary mask, specifying which data taking periods are covered by the
+            #                current line (0b001 for 6AD, 0b010 for 8AD and 0b101 for 7AD).
+            # - n_days - length of the period in days. Weekly (7 days) data is provided.
+            # - neutrino_rate_per_s - average neutrino rate per period (week).
             load_record_data(
-                name="daily_data.neutrino_rate_all",
-                filenames=cfg_file_mapping["daily_neutrino_rate_data"],
+                name="daily_data.antineutrino_rate_all",
+                filenames=cfg_file_mapping["daily_antineutrino_rate_data"],
                 replicate_outputs=index["reactor"],
                 columns=("period", "day", "n_det_mask", "n_days", "neutrino_rate_per_s"),
             )
 
-            # TODO
+            # Antineutrino rate data is then converted from weekly to daily (no interpolation) and
+            # split into data taking periods. The data is read from "daily_data.neutrino_rate_all"
+            # and stored in "daily_data.reactor".
             refine_neutrino_rate_data(
-                data("daily_data.neutrino_rate_all"),
-                data.create_child("daily_data.reactor_neutrino_rate"),
+                data("daily_data.antineutrino_rate_all"),
+                data.create_child("daily_data.reactor"),
                 reactors=index["reactor"],
             )
 
@@ -1990,28 +2003,28 @@ class model_dayabay:
             # from "daily_data.reactor_all" and stored in "daily_data.reactor".
             # TODO
 
-            # The detector and reactor data have different minimal period, therefore the
-            # arrays are not matching. With the following procedure we produce matching
-            # arrays for detector properties and reactor data based on the `day`. The
-            # procedure also checks that the data ranges are consistent.
+            # The detector and reactor data have different periods, therefore the arrays may not
+            # match. With the following procedure we produce matching arrays for detector properties
+            # and reactor data based on the `day`. The procedure also checks that the data ranges
+            # are consistent.
 
             # TODO
             sync_neutrino_rate_detector_data(
-                data("daily_data.reactor_neutrino_rate"),
+                data("daily_data.reactor"),
                 data("daily_data.detector"),
             )
 
-            # Finally for convenience we change the nesting order making the data taking
-            # period the innermost index. This does not affect matching the indices,
-            # however is more convenient for plotting.
-            # TODO
-            data["daily_data.reactor_neutrino_rate.neutrino_rate_per_s"] = remap_items(
-                data.get_dict("daily_data.reactor_neutrino_rate.neutrino_rate_per_s"),
+            # Finally for convenience we change the nesting order of the storage making the data
+            # taking period the innermost index. This does not affect matching the indices, however
+            # it is more convenient for plotting.
+            data["daily_data.reactor.antineutrino_rate_per_s"] = remap_items(
+                data.get_dict("daily_data.reactor.neutrino_rate_per_s"),
                 reorder_indices={
                     "from": ["period", "reactor"],
                     "to": ["reactor", "period"],
                 },
             )
+            del data["daily_data.reactor.neutrino_rate_per_s"]
 
             # After the data is split into arrays and synchronized we create array nodes
             # for each input using `Array.from_storage` class method.
@@ -2030,7 +2043,7 @@ class model_dayabay:
             #   - rate_accidentals
             # - reactor data for each reactor and period:
             #   - power
-            #   - fission_fraction
+            #   - fission_fractions
             Array.from_storage(
                 "daily_data.detector.days",
                 storage.get_dict("data"),
@@ -2073,7 +2086,7 @@ class model_dayabay:
             )
 
             Array.from_storage(
-                "daily_data.reactor_neutrino_rate.neutrino_rate_per_s",
+                "daily_data.reactor.antineutrino_rate_per_s",
                 storage.get_dict("data"),
                 remove_processed_arrays=True,
                 dtype="d",
@@ -2097,68 +2110,64 @@ class model_dayabay:
             # At this point we have the information to compute the antineutrino
             # flux.
             # TODO
-            # - nominal thermal power [MeV/s], fit-dependent
-            # - nominal thermal power [MeV/s], fit-independent (central values)
-            # - fission fraction, corrected based on nuisance parameters [fraction]
-            # - average energy per fission
+            # - nominal thermal power [MeV/s], fit-dependent.
+            # - nominal thermal power [MeV/s], fit-independent (central values).
+            # - fission fractions, corrected based on nuisance parameters [fraction].
+            # - average energy per fission.
 
             # Thermal power [MeV/s] for each reactor is defined as multiplication of
             # parameters `nominal_thermal_power` [GW] for each reactor and conversion
             # constant. While storages may be accessed with `[]` we explicitly use
             # `get_dict` and `get_value` methods to indicate whether we expect a single
             # object or a nested storage.
-            Product.replicate(
-                parameters.get_dict("all.reactor.nominal_thermal_power"),
-                parameters.get_value("all.conversion.conversion_reactor_power"),
-                name="reactor.thermal_power_nominal_MeVs",
-                replicate_outputs=index["reactor"],
-            )
+            # TODO
 
             # We repeat the same procedure for the central value. While the previous
             # "thermal_power_nominal_MeVs" depends on the minimization parameters
             # "all.reactor.nominal_thermal_power", for the following product we use
             # "central.reactor.nominal_thermal_power", which do not depend on them.
             Product.replicate(
-                parameters.get_dict("central.reactor.nominal_thermal_power"),
+                parameters.get_value("constant.reactor.nominal_thermal_power"),
                 parameters.get_value("all.conversion.conversion_reactor_power"),
                 name="reactor.thermal_power_nominal_MeVs_central",
-                replicate_outputs=index["reactor"],
             )
 
-            # Apply the variable scale (nuisance) to the fiction fractions. Fission
-            # fractions are time dependent and the scale is applied to each day. The
-            # result is an array for each reactor, isotope, period triplet.
+            # Apply the variable scale (nuisance) to the nominal average fiction fractions' values.
+            # The result is computed each reactor, isotope pair.
             # TODO
             Product.replicate(
-                parameters.get_dict("all.reactor.fission_fraction_scale"),
+                parameters.get_dict("all.reactor.fission_fractions_scale"),
                 parameters.get_dict("all.reactor.fission_fractions"),
-                name="reactor.fission_fraction_scaled",
+                name="reactor.fission_fractions_scaled",
                 replicate_outputs=combinations["reactor.isotope"],
             )
 
-            # Compute absollute value of previous transformation. It is needed because
-            # sometime minimization procedure goes to the non-physical values of
-            # fission fraction. This transforamtion limits possible variations.
+            # Compute absolute value of previous transformation. It is needed because sometime
+            # minimization procedure goes to the non-physical values of fission fractions. This
+            # transformation limits possible variations and helps if the fit jumps to the unphysical
+            # region.
             # TODO: code
             Abs.replicate(
-                name="reactor.fission_fraction_scaled_abs",
+                name="reactor.fission_fractions_scaled_abs",
                 replicate_outputs=combinations["reactor.isotope"],
             )
-            outputs.get_dict("reactor.fission_fraction_scaled") >> inputs.get_dict(
-                "reactor.fission_fraction_scaled_abs"
+            outputs.get_dict("reactor.fission_fractions_scaled") >> inputs.get_dict(
+                "reactor.fission_fractions_scaled_abs"
             )
 
-            # Using daily fission fractions compute weighted energy per fission in each
-            # isotope in each reactor during each period. This is an intermediate step
-            # to obtain average energy per fission in each reactor.
+            # Using average fission fractions compute weighted energy per fission for each isotope
+            # in each reactor. This is an intermediate step to obtain average energy per fission in
+            # each reactor.
             # TODO: check
             Product.replicate(
                 parameters.get_dict("all.reactor.energy_per_fission"),
-                outputs.get_dict("reactor.fission_fraction_scaled_abs"),
+                outputs.get_dict("reactor.fission_fractions_scaled_abs"),
                 name="reactor.energy_per_fission_weighted_MeV",
                 replicate_outputs=combinations["reactor.isotope"],
             )
 
+            # Compute the same number, but use central values of the energy per fission. The result
+            # is referred as nominal and is not affected by the fit.
             Product.replicate(
                 parameters.get_dict("central.reactor.energy_per_fission"),
                 parameters.get_dict("all.reactor.fission_fractions"),
@@ -2166,17 +2175,19 @@ class model_dayabay:
                 replicate_outputs=combinations["isotope"],
             )
 
+            # Compute weighted number of antineutrinos per fission in order to obtain the average
+            # number of antineutrinos per fission. As the numbers are fixed, the result is referred
+            # as nominal.
             # TODO
             Product.replicate(
-                parameters.get_dict("all.reactor.neutrinos_per_fission"),
+                parameters.get_dict("all.reactor.antineutrinos_per_fission"),
                 parameters.get_dict("all.reactor.fission_fractions"),
-                name="reactor.neutrinos_per_fission_nominal_weighted_MeV",
+                name="reactor.antineutrinos_per_fission_nominal_weighted",
                 replicate_outputs=combinations["isotope"],
             )
 
-            # Sum weighted energy per fission within each reactor (isotope index
-            # removed) to compute average energy per fission in each reactor during each
-            # period.
+            # Sum weighted energy per fission in each reactor (isotope index
+            # removed) to compute average energy per fission in each reactor.
             # TODO: check
             Sum.replicate(
                 outputs.get_dict("reactor.energy_per_fission_weighted_MeV"),
@@ -2184,58 +2195,60 @@ class model_dayabay:
                 replicate_outputs=combinations["reactor"],
             )
 
+            # Also obtain nominal average energy per fission. It is common for all the reactors.
             Sum.replicate(
                 outputs.get_dict("reactor.energy_per_fission_nominal_weighted_MeV"),
                 name="reactor.energy_per_fission_nominal_average_MeV",
             )
 
+            # Nominal average number of antineutrinos, released per fission.
             # TODO
             Sum.replicate(
-                outputs.get_dict("reactor.neutrinos_per_fission_nominal_weighted_MeV"),
-                name="reactor.neutrinos_per_fission_nominal_average_MeV",
+                outputs.get_dict("reactor.antineutrinos_per_fission_nominal_weighted"),
+                name="reactor.antineutrinos_per_fission_nominal_average",
             )
 
+            # Nominal average number of antineutrinos per fission.
             # TODO
             Division.replicate(
-                outputs.get_value("reactor.neutrinos_per_fission_nominal_average_MeV"),
+                outputs.get_value("reactor.antineutrinos_per_fission_nominal_average"),
                 outputs.get_value("reactor.energy_per_fission_nominal_average_MeV"),
-                name="reactor.neutrinos_per_MeV_nominal_average",
+                name="reactor.antineutrinos_per_MeV_nominal_average",
             )
 
-            # Compute daily contribution of each isotope to reactor's thermal power by
-            # multiplying fission fractions, nominal thermal power [MeV/s] and fractional
-            # thermal power.
+            # Compute fission fractions divided by average energy per fission for each reactor and
+            # each isotope. The difference between reactors and isotopes comes from fission
+            # fractions' uncertainties being uncorrelated between reactors.
             # TODO: code?
-
-            # Compute number of fissions per second related to each isotope in each
-            # reactor and each period: divide partial thermal power by average energy
-            # per fission.
             Division.replicate(
-                outputs.get_dict("reactor.fission_fraction_scaled_abs"),
+                outputs.get_dict("reactor.fission_fractions_scaled_abs"),
                 outputs.get_dict("reactor.energy_per_fission_average_MeV"),
                 name="reactor.fission_fractions_per_MeV",
                 replicate_outputs=combinations["reactor.isotope"],
             )
 
+            # Using daily antineutrino rate for each reactor and nominal average number of
+            # antineutrinos per MeV obtain an estimate of daily thermal power per reactor during
+            # each period.
             # TODO
             Division.replicate(
-                outputs.get_dict("daily_data.reactor_neutrino_rate.neutrino_rate_per_s"),
-                outputs.get_value("reactor.neutrinos_per_MeV_nominal_average"),
-                name="reactor.thermal_power_daily_average_MeV_per_s",
+                outputs.get_dict("daily_data.reactor.antineutrino_rate_per_s"),
+                outputs.get_value("reactor.antineutrinos_per_MeV_nominal_average"),
+                name="daily_data.reactor.thermal_power_average_MeV_per_s",
                 replicate_outputs=combinations["reactor.period"],
             )
 
-            # In the few following operations repeat the calculation of fissions per
-            # second for SNF. This time we use fixed average fission fractions. The SNF
-            # is defined as a fraction of nominal antineutrino spectrum from reactor.
-            # Therefore the isotope index is used.
+            # In the few following operations we do similar calculations, but in a simplified form
+            # for SNF, which has a minor contribution and therefore we avoid it depending on some of
+            # the nuisance parameters.
 
-            # For SNF contribution use central values for the nominal thermal power.
+            # For SNF contribution use central values for the nominal thermal power and fixed
+            # values of fission fractions.
             Product.replicate(
                 parameters.get_dict("all.reactor.fission_fractions"),
-                outputs.get_dict("reactor.thermal_power_nominal_MeVs_central"),
+                outputs.get_value("reactor.thermal_power_nominal_MeVs_central"),
                 name="reactor.thermal_power_snf_isotope_MeV_per_second",
-                replicate_outputs=combinations["reactor.isotope"],
+                replicate_outputs=combinations["isotope"],
             )
 
             # Compute fissions per second for SNF calculation.
@@ -2243,7 +2256,7 @@ class model_dayabay:
                 outputs.get_dict("reactor.thermal_power_snf_isotope_MeV_per_second"),
                 outputs.get_value("reactor.energy_per_fission_nominal_average_MeV"),
                 name="reactor.fissions_per_second_snf",
-                replicate_outputs=combinations["reactor.isotope"],
+                replicate_outputs=combinations["isotope"],
             )
 
             # Now we need to incorporate the knowledge on the detector operation.
@@ -2257,10 +2270,10 @@ class model_dayabay:
             # we provide a list of indices, which should not trigger an exception.
             # TODO
             Product.replicate(
-                outputs.get_dict("reactor.thermal_power_daily_average_MeV_per_s"),
+                outputs.get_dict("daily_data.reactor.thermal_power_average_MeV_per_s"),
                 outputs.get_dict("daily_data.detector.eff_livetime"),
-                name="reactor_detector.thermal_energy_daily_MeV",
-                replicate_outputs=combinations["reactor.isotope.detector.period"],
+                name="daily_data.reactor_detector.thermal_energy_MeV",
+                replicate_outputs=combinations["reactor.detector.period"],
                 allow_skip_inputs=True,
                 skippable_inputs_should_contain=inactive_detectors,
             )
@@ -2268,7 +2281,7 @@ class model_dayabay:
             # Sum up each array of daily data to obtain number of fissions as seen by
             # each detector from each isotope from each reactor during each period.
             ArraySum.replicate(
-                outputs.get_dict("reactor_detector.thermal_energy_daily_MeV"),
+                outputs.get_dict("daily_data.reactor_detector.thermal_energy_MeV"),
                 name="reactor_detector.thermal_energy_MeV",
             )
 
@@ -2298,7 +2311,7 @@ class model_dayabay:
             # Now we can combine total number of fissions (producing neutrinos) in each
             # reactor from each isotope, number of target protons in each detector,
             # corresponding baseline factor and efficiency:
-            # - Number of fissions × N protons × ε / (4πL²) (main)
+            # - Number of fissions × N protons × ε / (4πL²) (main).
             # The result bears four indices: reactor, isotope, detector and period.
             # TODO: change units since here
             Product.replicate(
@@ -2306,13 +2319,13 @@ class model_dayabay:
                 outputs.get_dict("detector.n_protons"),
                 outputs.get_dict("reactor_detector.baseline_factor_per_cm2"),
                 parameters.get_value("all.detector.efficiency"),
-                name="reactor_detector.n_fissions_n_protons_per_cm2",
-                replicate_outputs=combinations["reactor.isotope.detector.period"],
+                name="reactor_detector.energy_n_protons_per_cm2",
+                replicate_outputs=combinations["reactor.detector.period"],
             )
 
             # TODO
             Product.replicate(
-                outputs.get_dict("reactor_detector.n_fissions_n_protons_per_cm2"),
+                outputs.get_dict("reactor_detector.energy_n_protons_per_cm2"),
                 outputs.get_dict("reactor.fission_fractions_per_MeV"),
                 parameters.get_dict("all.reactor.thermal_power_scale"),
                 name="reactor_detector.n_fissions_n_protons_per_cm2_scaled",
@@ -2332,7 +2345,7 @@ class model_dayabay:
 
             # Compute similar values for SNF. Note, that it should be also multiplied by
             # effective livetime:
-            # - Effective live time × N protons × ε / (4πL²)  (SNF)
+            # - Effective live time × N protons × ε / (4πL²)  (SNF).
             Product.replicate(
                 outputs.get_dict("detector.eff_livetime"),
                 outputs.get_dict("detector.n_protons"),
@@ -2340,7 +2353,7 @@ class model_dayabay:
                 parameters.get_dict("all.reactor.snf_scale"),
                 parameters.get_value("all.reactor.snf_factor"),
                 parameters.get_value("all.detector.efficiency"),
-                name="reactor_detector.livetime_n_protons_per_cm2_snf",
+                name="reactor_detector.eff_livetime_n_protons_per_cm2_snf",
                 replicate_outputs=combinations["reactor.detector.period"],
                 allow_skip_inputs=True,
                 skippable_inputs_should_contain=inactive_detectors,
@@ -2350,7 +2363,7 @@ class model_dayabay:
                 outputs.get_dict("reactor_antineutrino.neutrino_per_fission_per_MeV_nominal"),
                 outputs.get_dict("reactor.fissions_per_second_snf"),
                 name="reactor_antineutrino.snf_antineutrino.neutrino_per_second_isotope",
-                replicate_outputs=combinations["reactor.isotope"],
+                replicate_outputs=index["isotope"],
             )
 
             Sum.replicate(
@@ -2358,11 +2371,10 @@ class model_dayabay:
                     "reactor_antineutrino.snf_antineutrino.neutrino_per_second_isotope"
                 ),
                 name="reactor_antineutrino.snf_antineutrino.neutrino_per_second",
-                replicate_outputs=index["reactor"],
             )
 
             Product.replicate(
-                outputs.get_dict("reactor_antineutrino.snf_antineutrino.neutrino_per_second"),
+                outputs.get_value("reactor_antineutrino.snf_antineutrino.neutrino_per_second"),
                 outputs.get_dict("reactor_antineutrino.snf_antineutrino.correction_interpolated"),
                 name="reactor_antineutrino.snf_antineutrino.neutrino_per_second_snf",
                 replicate_outputs=index["reactor"],
@@ -2372,10 +2384,10 @@ class model_dayabay:
             # antineutrino spectrum from nuclear reactors:
             # - main — raw antineutrino flux based on the input spectra.
             # - neq — extra antineutrino flux due to NEQ correction to input spectra.
-            # - snf - extra antineutrino flux from SNF, assumed to be located at the
-            #         same position as reactors.
-            # Later the relevant numbers will be organized in storage with keys
-            # `nu_main`, `nu_neq` and `nu_snf`, which represent the `antineutrino_source` index.
+            # - snf - extra antineutrino flux from SNF, assumed to be located at the same position
+            #       as reactors.
+            # Later the relevant numbers will be organized in storage with keys `nu_main`, `nu_neq`,
+            # and `nu_snf`, which represent the `antineutrino_source` index.
 
             # The following part is related to the calculation of a product of
             # flux × oscillation probability × cross section [Nν·cm²/fission/proton]
@@ -2473,7 +2485,7 @@ class model_dayabay:
             #             × snf_factor(=1)
             Product.replicate(
                 outputs.get_dict("kinematics.integral.nu_snf"),
-                outputs.get_dict("reactor_detector.livetime_n_protons_per_cm2_snf"),
+                outputs.get_dict("reactor_detector.eff_livetime_n_protons_per_cm2_snf"),
                 name="eventscount.parts.nu_snf",
                 replicate_outputs=combinations["reactor.detector.period"],
             )
@@ -2501,13 +2513,12 @@ class model_dayabay:
             # At this points the IBD spectra at each detector are available assuming the
             # ideal detector response. 4 transformations will be applied in the
             # following order:
-            # - IAV effect — Energy loss due to particle passage through the wall of
-            # Inner Acrylic Vessel (IAV).
+            # - IAV effect — Energy loss due to particle passage through the wall of Inner Acrylic
+            #   Vessel (IAV).
             # - Energy scale distortion:
             #   + LSNL effect — common non-linear energy scale distortion.
-            #   + relative energy scale — uncorrelated between detectors linear energy
-            #                             scale.
-            # - Energy smearing due to finite energy resolution
+            #   + relative energy scale — uncorrelated between detectors linear energy scale.
+            # - Energy smearing due to finite energy resolution.
             # - Rebinning to the final binning.
 
             # Load the IAV matrix from the input file.
@@ -2587,15 +2598,14 @@ class model_dayabay:
             )
 
             # Pre-process LSNL curves in the following order:
-            # - convert relative curves to absolute ones
-            # - interpolate with 4 times smaller step using `cubic` interpolation
-            #   (`refine_times` argument)
-            # - extrapolate linearly absolute curves to an extended range
-            #   (`newmin` and `newmax`)
-            # - compute (nominal-pullᵢ) difference curves to be used as corrections
+            # - convert relative curves to absolute ones.
+            # - interpolate with 4 times smaller step using `cubic` interpolation (`refine_times`
+            #   argument).
+            # - extrapolate linearly absolute curves to an extended range (`newmin` and `newmax`).
+            # - compute (nominal-pullᵢ) difference curves to be used as corrections.
             #
-            # The new fine Escint will be stored to `xname`. The argument `nominalname`
-            # selects the nominal curve. The curves will be overwritten.
+            # The new fine Escint will be stored to `xname`. The argument `nominalname` selects the
+            # nominal curve. The curves will be overwritten.
             refine_lsnl_data(
                 storage.get_dict("data.detector.lsnl.curves"),
                 xname="escint",
@@ -2748,9 +2758,9 @@ class model_dayabay:
             # These kind of classes do create multiple nodes inside, interconnect them
             # together and pass the inputs and outputs for external use.
             # In this particular case the instance will manage have
-            # - EnergyResolutionSigmaRelABC to compute σ(E)/E = sqrt(a² + b²/E + c²/E²)
-            # - EnergyResolutionMatrixBC to compute the matrix based on smearing at Bin
-            #   Centers (BC)
+            # - EnergyResolutionSigmaRelABC to compute σ(E)/E = sqrt(a² + b²/E + c²/E²).
+            # - EnergyResolutionMatrixBC to compute the matrix based on smearing at Bin Centers
+            #   (BC).
             # - BinCenter — tiny node to compute bin centers.
             #
             # TODO: target edges (to output_edges)
@@ -3052,10 +3062,10 @@ class model_dayabay:
 
             # Here we filtering parameters that would be used in MC sampling
             list_parameters_nuisance_normalized = []
-            for mc_parameter_suffix in self._mc_parameters:
+            for mc_parameter_prefix in self._mc_parameters:
                 list_parameters_nuisance_normalized.extend([
                     parameter for parname, parameter in parameters_nuisance_normalized.walkjoineditems()
-                    if parname.startswith(mc_parameter_suffix)
+                    if parname.startswith(mc_parameter_prefix)
                 ])
             npars_nuisance = len(list_parameters_nuisance_normalized)
 
@@ -3083,16 +3093,16 @@ class model_dayabay:
 
             Rebin.replicate(
                 names={
-                    "matrix": "detector.rebin_matrix.real",
+                    "matrix": "detector.rebin.matrix_data",
                     "product": "data.real.final.detector_period",
                 },
                 replicate_outputs=combinations["detector.period"],
             )
             edges_energy_erec >> inputs.get_value(
-                "detector.rebin_matrix.real.edges_old"
+                "detector.rebin.matrix_data.edges_old"
             )
             edges_energy_final >> inputs.get_value(
-                "detector.rebin_matrix.real.edges_new"
+                "detector.rebin.matrix_data.edges_new"
             )
             outputs["data.real.fine"] >> inputs.get_dict("data.real.final.detector_period")
 
@@ -3703,13 +3713,22 @@ class model_dayabay:
         labels = LoadYaml(relpath(__file__.replace(".py", ".yaml")))
 
         processed_keys_set = set()
-        self.storage("nodes").read_labels(labels, processed_keys_set=processed_keys_set)
-        self.storage("outputs").read_labels(labels, processed_keys_set=processed_keys_set)
+        if self._process_labels:
+            logger.log(INFO, "Processing labels")
+            labels = LoadYaml(relpath(__file__.replace(".py", ".yaml")))
+            self.storage("nodes").read_labels(labels, processed_keys_set=processed_keys_set)
+            self.storage("outputs").read_labels(labels, processed_keys_set=processed_keys_set)
+
         self.storage("inputs").remove_connected_inputs()
         self.storage.read_paths(index=self.index)
         self.graph.build_index_dict(self.index)
 
-        labels_mk = NestedMapping(labels, sep=".")
+        if not self._process_labels:
+            return
+
+        labels_mk = NestedMapping(
+            labels, sep="."
+        )  # pyright: ignore [reportPossiblyUnboundVariable]
         if not self._strict:
             return
 
