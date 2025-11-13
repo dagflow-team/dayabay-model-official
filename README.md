@@ -14,6 +14,10 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 
 - [Repositories](#repository)
 - [Minimal working example](minimal-working-example)
+  - [Preparation](preparation)
+  - [extras/mwe/run.py](extras/mwe/run.py)
+  - [extras/mwe/run-custom-data-path.py](extras/mwe/run-custom-data-path.py)
+  - [extras/mwe/run-switch-asimov-real-data.py](extras/mwe/run-switch-asimov-real-data.py)
 
 
 ## Repositories
@@ -22,66 +26,103 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 - Contact/pypi/mirror: https://github.com/dagflow-team/dayabay-model-official
 - PYPI: https://pypi.org/project/dayabay-model-official
 
+## Daya Bay analysis repository
+
+Several examples of scripts for fitting and plotting results are stored in [dayabay-analysis](https://git.jinr.ru/dagflow-team/dayabay-analysis). Do steps from [preparation section](section) before going to the repository with analysis examples.
+
 ## Minimal working example
 
 If you want to run examples from `extras/mwe`, clone this repository `git clone https://github.com/dagflow-team/dayabay-model-official` and change position to cloned reposiotry `cd dayabay-model-official`.
 However, you can just copy examples that are listed below and run them where you want after installation of package and several others steps:
 
-1. Install package `pip install dayabay-model-official`
-2. Install required packages: `pip install -r requirements`
-3. Download archive from the provided storages by email (check email from Maxim Gonchar 13 November 2025) and unpack it
-  - Download archive `dayabay_data_v2-npz.zip`
-  - Unpack archive `dayabay_data_v2-npz.zip`: via GUI or just run command `unzip /path/to/dayabay_data_v2-npz.zip -d ./`. **WARNING**: unpacking might cause overwritting of `README.md`. Ignore it and press `N`+`Enter`
-  - Rename data directory from `npz/` to `data/` via GUI or  just run command `mv npz/ data/`
-4. Update `PYTHONPATH` variable to the current directory: `export PYTHONPATH=$PHYTHONPATH:$PWD`. **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...`
-6. Run script `python extras/mwe/run.py` or `PYTHONPATH=PWD python extras/mwe/run.py`
-```python
-from dayabay_model_official import model_dayabay
+### Preparation
 
-model = model_dayabay()
-print(model.storage["outputs.statistic.full.covmat.chi2cnp"].data)
-```
-within `python`
+1. Install package
 ```bash
-python extras/mwe/run.py
+pip install dayabay-model-official
 ```
-7. Check output in console, it might be something like below
-```bash
-INFO: Model version: model_dayabay
-INFO: Source type: npz
-INFO: Data path: data
-INFO: Concatenation mode: detector_period
-INFO: Spectrum correction mode: exponential
-INFO: Spectrum correction location: before integration
-[705.12741983]
-```
-It shows non-zero value of chi-squared function because by default it loads `real` data. About choosing `real`/`asimov` data read above.
-8. Also, you may pass custom path to data, if you put `path_data` parameter to model. For example,
-```python
-from dayabay_model_official import model_dayabay
+2. Download archive from the provided storages by email (check email from Maxim Gonchar 13 November 2025) and unpack it
+  - Download archive
+    ```bash
+    dayabay_data_v2-npz.zip
+    ```
+  - Unpack archive `dayabay_data_v2-npz.zip`: via GUI or just run command
+    ```bash
+    unzip /path/to/dayabay_data_v2-npz.zip -d ./
+    ```
+    **WARNING**: unpacking might cause overwritting of `README.md`. Ignore it and press `N`+`Enter`
+  - Rename data directory from `npz/` to `data/` via GUI or  just run command
+    ```bash
+    mv npz/ data/
+    ```
+3. Update `PYTHONPATH` variable to the current directory:
+  ```bash
+  export PYTHONPATH=$PHYTHONPATH:$PWD
+  ```
+  **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...`
 
-model = model_dayabay(path_data="dayabay-data-official/npz")
-print(model.storage["outputs.statistic.full.pull.chi2cnp"].data)
-```
-Example can be executed: `python extras/mwe/run-custom-data-path.py` or `PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py`
-**Warning**: before running this example, make sure that you have put data in `dayabay-data-official/npz`. You can do it with `data/` from previous example. Run commands:
-```bash
-mkdir dayabay-data-official/
-mv data/ dayabay-data-official/npz/
-```
+### `extras/mwe/run.py`
+
+1. Run script `python extras/mwe/run.py` or `PYTHONPATH=PWD python extras/mwe/run.py`
+  ```python
+  from dayabay_model_official import model_dayabay
+
+  model = model_dayabay()
+  print(model.storage["outputs.statistic.full.covmat.chi2cnp"].data)
+  ```
+  within `python`
+  ```bash
+  python extras/mwe/run.py
+  ```
+2. Check output in console, it might be something like below
+  ```bash
+  INFO: Model version: model_dayabay
+  INFO: Source type: npz
+  INFO: Data path: data
+  INFO: Concatenation mode: detector_period
+  INFO: Spectrum correction mode: exponential
+  INFO: Spectrum correction location: before integration
+  [705.12741983]
+  ```
+  It shows non-zero value of chi-squared function because by default it loads `real` data. About choosing `real`/`asimov` data read above.
+
+### `extras/mwe/run-custom-data-path.py`
+
+1. Also, you may pass custom path to data, if you put `path_data` parameter to model. For example,
+  ```python
+  from dayabay_model_official import model_dayabay
+
+  model = model_dayabay(path_data="dayabay-data-official/npz")
+  print(model.storage["outputs.statistic.full.pull.chi2cnp"].data)
+  ```
+  Example can be executed:
+  ```bash
+  python extras/mwe/run-custom-data-path.py
+  ```
+  or
+  ```bash
+  PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py
+  ```
+  **Warning**: before running this example, make sure that you have put data in `dayabay-data-official/npz`. You can do it with `data/` from previous example. Run commands:
+  ```bash
+  mkdir dayabay-data-official/
+  mv data/ dayabay-data-official/npz/
+  ```
+
+### `extras/mwe/run-switch-asimov-real-data.py`
 
 9. If you want to switch between Asimov and observed data, you need to switch input in the next way
-```python
-from dayabay_model_official import model_dayabay
+  ```python
+  from dayabay_model_official import model_dayabay
 
-model = model_dayabay(path_data="dayabay-data-official/npz")
+  model = model_dayabay(path_data="dayabay-data-official/npz")
 
-print("CNP chi-squared (default data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
+  print("CNP chi-squared (default data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
 
-model.switch_data("real")
-print("CNP chi-squared (real data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
+  model.switch_data("real")
+  print("CNP chi-squared (real data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
 
-model.switch_data("asimov")
-print("CNP chi-squared (asimov data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
-```
-Example can be executed: `python extras/mwe/run-switch-asimov-real-data.py` or `PYTHONPATH=PWD python extras/mwe/run-switch-asimov-real-data.py`
+  model.switch_data("asimov")
+  print("CNP chi-squared (asimov data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
+  ```
+  Example can be executed: `python extras/mwe/run-switch-asimov-real-data.py` or `PYTHONPATH=PWD python extras/mwe/run-switch-asimov-real-data.py`
