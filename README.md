@@ -63,7 +63,15 @@ pip install dayabay-model-official
 
 ### `extras/mwe/run.py`
 
-1. Run script `python extras/mwe/run.py` or `PYTHONPATH=PWD python extras/mwe/run.py`
+1. Run script
+  ```bash
+  python extras/mwe/run.py
+  ```
+  or
+  ```bash
+  PYTHONPATH=PWD python extras/mwe/run.py
+  ```
+  Text of script is above
   ```python
   from dayabay_model_official import model_dayabay
 
@@ -103,7 +111,14 @@ pip install dayabay-model-official
   ```bash
   PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py
   ```
-2. Example can be executed: `python extras/mwe/run-custom-data-path.py` or `PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py`
+2. Example can be executed:
+  ```bash
+  python extras/mwe/run-custom-data-path.py
+  ```
+  or
+  ```bash
+  PYTHONPATH=PWD python extras/mwe/run-custom-data-path.py
+  ```
 3. **Warning**: before running this example, make sure that you have put data in `dayabay-data-official/npz`. You can do it with `data/` from previous example. Run commands:
   ```bash
   mkdir dayabay-data-official/
@@ -126,4 +141,11 @@ pip install dayabay-model-official
   model.switch_data("asimov")
   print("CNP chi-squared (asimov data):", model.storage["outputs.statistic.full.pull.chi2cnp"].data)
   ```
-2. Example can be executed: `python extras/mwe/run-switch-asimov-real-data.py` or `PYTHONPATH=PWD python extras/mwe/run-switch-asimov-real-data.py`
+2. Example can be executed: 
+  ```bash
+  python extras/mwe/run-switch-asimov-real-data.py
+  ```
+  or
+  ```bash
+  PYTHONPATH=PWD python extras/mwe/run-switch-asimov-real-data.py
+  ```
