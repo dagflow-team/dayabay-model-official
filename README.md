@@ -16,7 +16,7 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 - [Minimal working example](#minimal-working-example)
   - [Preparation](#preparation)
   - [Simple run](#simple-run)
-  - [Custom path to data](#custom-path-to-data)
+  - [Custom path to model data](#custom-path-to-model-data)
   - [Switch between real and asimov data](#switch-between-real-and-asimov-data)
 
 66:### Simple run
