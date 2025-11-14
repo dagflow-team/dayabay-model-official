@@ -16,7 +16,7 @@ from pandas import DataFrame
 # pyright: reportUnusedExpression=false
 
 if TYPE_CHECKING:
-    from typing import KeysView, ValuesView, Literal
+    from typing import KeysView, Literal, ValuesView
 
     from dag_modelling.core.meta_node import MetaNode
     from numpy.typing import NDArray
@@ -90,13 +90,13 @@ class model_dayabay:
         Text file with bin edges for the antineutrino spectrum or the edges themselves, which is relevant for the χ² calculation.
     final_erec_bin_edges : Path | Sequence[int | float] | NDArray | None, default=None
         Text file with bin edges for the final binning or the edges themselves, which is relevant for the χ² calculation.
-    covariance_groups: Sequence[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
-        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fraction", "background_rate",
+    covariance_groups: list[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
+        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fractions", "background_rate",
         "hm_corr", "hm_uncorr"]], default=[]
         List of nuicance groups to be added to covariance matrix. If no parameters passed,
         full covariance matrix will be created.
-    pull_groups: Sequence[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
-        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fraction", "background_rate",
+    pull_groups: list[Literal["survival_probability", "eres", "lsnl", "iav", "detector_relative",
+        "energy_per_fission", "thermal_power", "snf", "neq", "fission_fractions", "background_rate",
         "hm_corr", "hm_uncorr"]], default=[]
         List of nuicance groups to be added to `nuisance.extra_pull`. If no parameters passed, it will add all nuisance parameters.
     mc_parameters: Sequence
@@ -164,7 +164,29 @@ class model_dayabay:
     spectrum_correction_location: Literal["before-integration", "after-integration"]
     concatenation_mode: Literal["detector", "detector_period"]
     monte_carlo_mode: Literal["asimov", "normal-stats", "poisson"]
-    _covariance_groups: Sequence[Literal[
+    _arrays_dict: dict[str, Path | NDArray | None]
+    _covariance_groups: (
+        Sequence[
+            Literal[
+                "survival_probability",
+                "eres",
+                "lsnl",
+                "iav",
+                "detector_relative",
+                "energy_per_fission",
+                "thermal_power",
+                "snf",
+                "neq",
+                "fission_fractions",
+                "background_rate",
+                "hm_corr",
+                "hm_uncorr",
+            ]
+        ]
+        | KeysView
+    )
+    _pull_groups: Sequence[
+        Literal[
             "survival_probability",
             "eres",
             "lsnl",
@@ -178,12 +200,8 @@ class model_dayabay:
             "background_rate",
             "hm_corr",
             "hm_uncorr",
-    ]] | KeysView
-    _pull_groups: Sequence[Literal[
-            "survival_probability", "eres", "lsnl", "iav",
-            "detector_relative", "energy_per_fission", "thermal_power",
-            "snf", "neq", "fission_fractions", "background_rate", "hm_corr", "hm_uncorr"
-    ]]
+        ]
+    ]
     _arrays_dict: dict[str, Path | NDArray | None]
     _mc_parameters: Sequence | ValuesView
     _is_absolute_efficiency_fixed: bool
@@ -215,23 +233,26 @@ class model_dayabay:
         path_data: str | Path | None = None,
         antineutrino_spectrum_segment_edges: str | Path | None = None,
         final_erec_bin_edges: str | Path | Sequence[int | float] | NDArray | None = None,
-        covariance_groups: Sequence[
-            Literal[
-                "survival_probability",
-                "eres",
-                "lsnl",
-                "iav",
-                "detector_relative",
-                "energy_per_fission",
-                "thermal_power",
-                "snf",
-                "neq",
-                "fission_fractions",
-                "background_rate",
-                "hm_corr",
-                "hm_uncorr",
+        covariance_groups: (
+            Sequence[
+                Literal[
+                    "survival_probability",
+                    "eres",
+                    "lsnl",
+                    "iav",
+                    "detector_relative",
+                    "energy_per_fission",
+                    "thermal_power",
+                    "snf",
+                    "neq",
+                    "fission_fractions",
+                    "background_rate",
+                    "hm_corr",
+                    "hm_uncorr",
+                ]
             ]
-    ] | KeysView = [],
+            | KeysView
+        ) = [],
         pull_groups: Sequence[
             Literal[
                 "survival_probability",
@@ -248,7 +269,7 @@ class model_dayabay:
                 "hm_corr",
                 "hm_uncorr",
             ]
-    ] = [],
+        ] = [],
         mc_parameters: Sequence | ValuesView = [],
         is_absolute_efficiency_fixed: bool = True,
     ):
@@ -291,8 +312,8 @@ class model_dayabay:
         if pull_covariance_intersect:
             logger.log(
                 INFO,
-                "Pull groups intersect with covariance groups: "
-                f"{pull_covariance_intersect}")
+                "Pull groups intersect with covariance groups: " f"{pull_covariance_intersect}",
+            )
 
         systematic_groups_pull_covariance_intersect = (
             set(self.systematic_uncertainties_groups.keys())
@@ -310,16 +331,25 @@ class model_dayabay:
             mc_parameters = self.systematic_uncertainties_groups.values()
 
         from .tools.validate_load_array import validate_load_array
+
         self._arrays_dict = {
-            "antineutrino_spectrum_segment_edges": validate_load_array(antineutrino_spectrum_segment_edges),
+            "antineutrino_spectrum_segment_edges": validate_load_array(
+                antineutrino_spectrum_segment_edges
+            ),
             "final_erec_bin_edges": validate_load_array(final_erec_bin_edges),
         }
 
-        if antineutrino_spectrum_segment_edges is not None and override_cfg_files.get("antineutrino_spectrum_segment_edges"):
-            raise RuntimeError("Antineutrino bin edges couldn't be overloaded via `antineutrino_spectrum_segment_edges` and `override_cfg_files` simultaneously")
+        if antineutrino_spectrum_segment_edges is not None and override_cfg_files.get(
+            "antineutrino_spectrum_segment_edges"
+        ):
+            raise RuntimeError(
+                "Antineutrino bin edges couldn't be overloaded via `antineutrino_spectrum_segment_edges` and `override_cfg_files` simultaneously"
+            )
 
         if final_erec_bin_edges is not None and override_cfg_files.get("final_erec_bin_edges"):
-            raise RuntimeError("Final Erec bin edges couldn't be overloaded via `final_erec_bin_edges` and `override_cfg_files` simultaneously")
+            raise RuntimeError(
+                "Final Erec bin edges couldn't be overloaded via `final_erec_bin_edges` and `override_cfg_files` simultaneously"
+            )
 
         match path_data:
             case str() | Path():
@@ -346,8 +376,11 @@ class model_dayabay:
         self._mc_parameters = mc_parameters
 
         from .tools.validate_load_array import validate_load_array
+
         self._arrays_dict = {
-            "antineutrino_spectrum_segment_edges": validate_load_array(antineutrino_spectrum_segment_edges),
+            "antineutrino_spectrum_segment_edges": validate_load_array(
+                antineutrino_spectrum_segment_edges
+            ),
             "final_erec_bin_edges": validate_load_array(final_erec_bin_edges),
         }
         self._random_generator = self._create_random_generator(seed)
@@ -554,7 +587,9 @@ class model_dayabay:
         # in the file and has type `ndarray`.
         if isinstance(self._arrays_dict["antineutrino_spectrum_segment_edges"], ndarray):
             antineutrino_model_edges = self._arrays_dict["antineutrino_spectrum_segment_edges"]
-            logger.info(f"Antineutrino model bin edges passed via argument: {antineutrino_model_edges!s}")
+            logger.info(
+                f"Antineutrino model bin edges passed via argument: {antineutrino_model_edges!s}"
+            )
         else:
             antineutrino_model_edges = FileReader.record[
                 cfg_file_mapping["antineutrino_spectrum_segment_edges"]
@@ -604,11 +639,11 @@ class model_dayabay:
                 "AD34",
             ),
             # Source of background events:
-            #     - accidentals: accidental coincidences
-            #     - lithium_helium: ⁹Li and ⁸He related events
-            #     - fast_neutrons: fast neutrons, includes also and muon decay background
-            #     - amc: ²⁴¹Am¹³C calibration source related background
-            #     - alpha_neutron: ¹³C(α,n)¹⁶O background
+            #     - accidentals: accidental coincidences.
+            #     - lithium_helium: ⁹Li and ⁸He related events.
+            #     - fast_neutrons: fast neutrons, includes also and muon decay background.
+            #     - amc: ²⁴¹Am¹³C calibration source related background.
+            #     - alpha_neutron: ¹³C(α,n)¹⁶O background.
             "background": (
                 "accidentals",
                 "lithium_helium",
@@ -735,8 +770,7 @@ class model_dayabay:
             + tuple(("nu_snf",) + cmb for cmb in combinations["reactor.detector"])
         )
 
-        # Start building the computational graph within a dedicated context, which
-        # includes:
+        # Start building the computational graph within a dedicated context, which includes:
         # - graph - the graph instance.
         #     + All the nodes are added to the graph while graph is open.
         #     + On the exit from the context the graph closes itself, which triggers allocation of
@@ -1998,17 +2032,10 @@ class model_dayabay:
                 reactors=index["reactor"],
             )
 
-            # Reactor data is then converted from monthly (TODO: specify) to daily (no
-            # interpolation) and split them into data taking periods. The data is read
-            # from "daily_data.reactor_all" and stored in "daily_data.reactor".
-            # TODO
-
             # The detector and reactor data have different periods, therefore the arrays may not
             # match. With the following procedure we produce matching arrays for detector properties
             # and reactor data based on the `day`. The procedure also checks that the data ranges
             # are consistent.
-
-            # TODO
             sync_neutrino_rate_detector_data(
                 data("daily_data.reactor"),
                 data("daily_data.detector"),
@@ -2134,7 +2161,6 @@ class model_dayabay:
 
             # Apply the variable scale (nuisance) to the nominal average fiction fractions' values.
             # The result is computed each reactor, isotope pair.
-            # TODO
             Product.replicate(
                 parameters.get_dict("all.reactor.fission_fractions_scale"),
                 parameters.get_dict("all.reactor.fission_fractions"),
@@ -2146,7 +2172,6 @@ class model_dayabay:
             # minimization procedure goes to the non-physical values of fission fractions. This
             # transformation limits possible variations and helps if the fit jumps to the unphysical
             # region.
-            # TODO: code
             Abs.replicate(
                 name="reactor.fission_fractions_scaled_abs",
                 replicate_outputs=combinations["reactor.isotope"],
@@ -2158,7 +2183,6 @@ class model_dayabay:
             # Using average fission fractions compute weighted energy per fission for each isotope
             # in each reactor. This is an intermediate step to obtain average energy per fission in
             # each reactor.
-            # TODO: check
             Product.replicate(
                 parameters.get_dict("all.reactor.energy_per_fission"),
                 outputs.get_dict("reactor.fission_fractions_scaled_abs"),
@@ -2178,7 +2202,6 @@ class model_dayabay:
             # Compute weighted number of antineutrinos per fission in order to obtain the average
             # number of antineutrinos per fission. As the numbers are fixed, the result is referred
             # as nominal.
-            # TODO
             Product.replicate(
                 parameters.get_dict("all.reactor.antineutrinos_per_fission"),
                 parameters.get_dict("all.reactor.fission_fractions"),
@@ -2188,7 +2211,6 @@ class model_dayabay:
 
             # Sum weighted energy per fission in each reactor (isotope index
             # removed) to compute average energy per fission in each reactor.
-            # TODO: check
             Sum.replicate(
                 outputs.get_dict("reactor.energy_per_fission_weighted_MeV"),
                 name="reactor.energy_per_fission_average_MeV",
@@ -2202,14 +2224,12 @@ class model_dayabay:
             )
 
             # Nominal average number of antineutrinos, released per fission.
-            # TODO
             Sum.replicate(
                 outputs.get_dict("reactor.antineutrinos_per_fission_nominal_weighted"),
                 name="reactor.antineutrinos_per_fission_nominal_average",
             )
 
             # Nominal average number of antineutrinos per fission.
-            # TODO
             Division.replicate(
                 outputs.get_value("reactor.antineutrinos_per_fission_nominal_average"),
                 outputs.get_value("reactor.energy_per_fission_nominal_average_MeV"),
@@ -2219,7 +2239,6 @@ class model_dayabay:
             # Compute fission fractions divided by average energy per fission for each reactor and
             # each isotope. The difference between reactors and isotopes comes from fission
             # fractions' uncertainties being uncorrelated between reactors.
-            # TODO: code?
             Division.replicate(
                 outputs.get_dict("reactor.fission_fractions_scaled_abs"),
                 outputs.get_dict("reactor.energy_per_fission_average_MeV"),
@@ -2230,7 +2249,6 @@ class model_dayabay:
             # Using daily antineutrino rate for each reactor and nominal average number of
             # antineutrinos per MeV obtain an estimate of daily thermal power per reactor during
             # each period.
-            # TODO
             Division.replicate(
                 outputs.get_dict("daily_data.reactor.antineutrino_rate_per_s"),
                 outputs.get_value("reactor.antineutrinos_per_MeV_nominal_average"),
@@ -3709,8 +3727,6 @@ class model_dayabay:
 
     def _setup_labels(self):
         from dag_modelling.tools.schema import LoadYaml
-
-        labels = LoadYaml(relpath(__file__.replace(".py", ".yaml")))
 
         processed_keys_set = set()
         if self._process_labels:
