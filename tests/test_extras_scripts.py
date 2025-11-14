@@ -81,17 +81,16 @@ def test_run_dayabay_plot_detector_data():
         assert os.path.exists(output.format(type=type))
 
 
-# def test_run_dayabay_plot_reactor_data():
-#     output = "output/reactor_{type}.pdf"
-#
-#     stdout, stderr, code = _run_script(
-#         "./tests/shell/test_dayabay-plot-reactor-data.sh",
-#     )
-#
-#     _check_script_result(code, stderr, stdout, None)
-#     for type in ["power", "fission_fraction"]:
-#         assert f"Save plot: {output.format(type=type)}" in stdout
-#         assert os.path.exists(output.format(type=type))
+def test_run_dayabay_plot_neutrino_rate_data():
+    output = "output/neutrino_rate.pdf"
+
+    stdout, stderr, code = _run_script(
+        "./tests/shell/test_dayabay-plot-neutrino-rate-data.sh",
+    )
+
+    _check_script_result(code, stderr, stdout, None)
+    assert f"Save plot: {output}" in stdout
+    assert os.path.exists(output)
 
 
 def test_run_dayabay_print_internal_data():

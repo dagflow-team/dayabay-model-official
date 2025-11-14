@@ -1,4 +1,6 @@
+#!/usr/bin/env python
+
 from dayabay_model_official import model_dayabay
 
 model = model_dayabay()
-print(model.storage["outputs.statistic.full.covmat.chi2n"].data)
+print("χ² CNP value:", model.storage["outputs.statistic.full.covmat.chi2cnp"].data)

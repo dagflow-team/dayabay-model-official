@@ -5,13 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [1.4.2] - 2025-11-
+
+- feature: a script to plot neutrino rate daily data.
+- chore: update variable names, labels, units. TODO
+
 ## [1.4.1] - 2025-11-08
 
 - feature: add `mc_parameters` field to determine wich normalized parameters will be used to produce Monte-Carlo samples. It works with names of parameters from the storage, not their covariance uncertainties aliases.
 
 ## [1.4.0] - 2025-11-07
 
-- feature: changed official data from fission fractions granularity to information about total netrino rate.
+- feature: official data now uses total weekly neutrino rate from each reactor.
 - feature: remove test for checking reactor data plots.
 
 ## [1.3.2] - 2025-11-02
