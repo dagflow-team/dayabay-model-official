@@ -8,7 +8,7 @@
 [![pages](https://img.shields.io/badge/pages-link-white.svg)](http://dagflow-team.pages.jinr.ru/dayabay-model-official)
 -->
 
-Official model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data.
+The model of the Daya Bay reactor antineutrino experiment dedicated to work with official Daya Bay dataset and perform neutrino oscillation analysis based on gadolinium capture data.
 
 ## Content
 
@@ -25,50 +25,45 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 - Contact/pypi/mirror: https://github.com/dagflow-team/dayabay-model-official
 - PYPI: https://pypi.org/project/dayabay-model-official
 
-## Daya Bay analysis repository
+## Working with the model
 
-Several examples of scripts for fitting and plotting results are stored in [dayabay-analysis](https://github.com/dagflow-team/dayabay-analysis). Do steps from [preparation section](section) before going to the repository with analysis examples.
+The typical workflow considers installation of the Daya Bay model via PYPI and using it in the analysis from within python. Minimal usage examples may be found in this repository while more comprehensive cases of the fits and statsitical analysis are provided in a dedicated [dayabay-analysis](https://github.com/dagflow-team/dayabay-analysis) repository.
 
-## Minimal working example
+### Minimal working examples
 
-If you want to run examples from `extras/mwe`, clone this repository `git clone https://github.com/dagflow-team/dayabay-model-official` and change position to cloned reposiotry `cd dayabay-model-official`.
+The minimal working exampls are located in the folder `extras/mwe` folder. In order to run them clone this repository :
+```bash
+git clone https://github.com/dagflow-team/dayabay-model-official 
+cd dayabay-model-official
+````
 However, you can just copy examples that are listed below and run them where you want after installation of package and several others steps:
 
-### Preparation
+### Installation
 
-Here are described several points of how to start work with `dayabay-official-data` and how to run MWE. Same steps might be useful for [dayabay-analysis](https://github.com/dagflow-team/dayabay-analysis).
+The first steps are to obtain the code and the data:
 
-1. Install package
 ```bash
+# install the package
 pip install dayabay-model-official
+# obtain the dataset in a preferred format
+# the file is shared via email at this stage
+# download dayabay_data_v2-npz.zip # note: to be updated
+# inpack the data
+unzip /path/to/dayabay_data_v2-npz.zip -d ./
+mv npz/ data/
+# setup environment variables
+export PYTHONPATH=$PHYTHONPATH:$PWD
 ```
-2. Download archive from the provided storages by email (check email from Maxim Gonchar 13 November 2025) and unpack it
-  - Download archive
-    ```bash
-    dayabay_data_v2-npz.zip
-    ```
-  - Unpack archive `dayabay_data_v2-npz.zip`: via GUI or just run command
-    ```bash
-    unzip /path/to/dayabay_data_v2-npz.zip -d ./
-    ```
-    **WARNING**: unpacking might cause overwritting of `README.md`. Ignore it and press `N`+`Enter`
-  - Rename data directory from `npz/` to `data/` via GUI or  just run command
-    ```bash
-    mv npz/ data/
-    ```
-3. Update `PYTHONPATH` variable to the current directory:
-  ```bash
-  export PYTHONPATH=$PHYTHONPATH:$PWD
-  ```
-  **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...`
 
-### Simple run
+<!-- **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...` -->
 
-Let's run model without any additional parameters. AS it is from box.
+#### Simple run
+
+Assuming the environment variables are set, the
 
 1. Run script
   ```bash
-  python extras/mwe/run.py
+  ./extras/mwe/run.py
   ```
   or
   ```bash
@@ -97,7 +92,7 @@ Let's run model without any additional parameters. AS it is from box.
   ```
   It shows non-zero value of chi-squared function because by default it loads `real` data. About choosing `real`/`asimov` data read above.
 
-### Custom path to model data
+#### Custom path to model data
 
 Sometimes it is useful to load data model from specific directory. For this aim you may want to use `path_data` parameter of `model_dayabay`.
 
@@ -130,7 +125,7 @@ Sometimes it is useful to load data model from specific directory. For this aim 
   mv data/ dayabay-data-official/npz/
   ```
 
-### Switch between real and Asimov data
+#### Switch between real and Asimov data
 
 `real` data is loaded to model by default. However, it is possible to switch between `real` and `Asmov` datasets.
 
