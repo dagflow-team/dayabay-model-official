@@ -36,7 +36,7 @@ def main(opts: Namespace) -> None:
 
     days_storage = storage["outputs.daily_data.days"]
     # neutrino_rate_storage = storage["outputs.daily_data.reactor.antineutrino_rate_per_s"]
-    neutrino_rate_storage = storage["outputs.daily_data.reactor_neutrino_rate.neutrino_rate_per_s"]
+    neutrino_rate_storage = storage["outputs.daily_data.reactor.antineutrino_rate_per_s"]
 
     reactors = ["R1", "R2", "R3", "R4", "R5", "R6"]
     reactors = {ad: i for i, ad in enumerate(reactors)}
