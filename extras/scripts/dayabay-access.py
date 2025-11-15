@@ -19,7 +19,7 @@ from dag_modelling.tools.logger import set_verbosity
 from matplotlib import pyplot as plt
 from numpy import linspace, zeros_like
 
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 
 def main(opts: Namespace) -> None:

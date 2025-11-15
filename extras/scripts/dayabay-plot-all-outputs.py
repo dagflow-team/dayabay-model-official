@@ -16,7 +16,7 @@ from argparse import Namespace
 from dag_modelling.tools.logger import set_verbosity
 from matplotlib import pyplot as plt
 
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 plt.rcParams.update(
     {

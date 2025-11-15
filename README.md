@@ -39,7 +39,7 @@ However, you can just copy examples that are listed below and run them where you
 5. Set `PYTHONPATH` variable to the current directory: `set PYTHONPATH=$PHYTHONPATH:$PWD`. **Alternative**: set variable value when you are running example: `PYTHONPATH=PWD python ./extras/...`
 6. Run script `python extras/mwe/run.py` or `PYTHONPATH=PWD python extras/mwe/run.py`
 ```python
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 model = model_dayabay()
 print(model.storage["outputs.statistic.full.pull.chi2p"].data)
@@ -60,7 +60,7 @@ INFO: Spectrum correction location: before integration
 ```
 8. Also, you may pass custom path to data, if you put `path_data` parameter to model. For example,
 ```python
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 model = model_dayabay(path_data="dayabay-data-official/npz")
 print(model.storage["outputs.statistic.full.pull.chi2p"].data)
@@ -69,7 +69,7 @@ Example can be executed: `python extras/mwe/run-custom-data-path.py` or `PYTHONP
 
 9. If you want to switch between Asimov and observed data, you need to switch input in the next way
 ```python
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 model = model_dayabay(path_data="dayabay-data-official/npz")
 

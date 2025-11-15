@@ -23,7 +23,7 @@ from dag_modelling.tools.save_matrices import save_matrices
 from matplotlib import pyplot as plt
 from numpy import ma
 
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 plt.rcParams.update(
     {

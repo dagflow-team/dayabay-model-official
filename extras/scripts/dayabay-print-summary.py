@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 from dag_modelling.tools.logger import set_verbosity
 from dag_modelling.tools.save_records import save_records
 
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
