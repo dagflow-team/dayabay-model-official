@@ -1,7 +1,7 @@
 import numpy as np
 from pytest import raises
 
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 
 def test_dayabay_v1a_custom_cov_pull():

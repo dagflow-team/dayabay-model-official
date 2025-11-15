@@ -1,7 +1,7 @@
 from dag_modelling.core import Graph, NodeStorage
 from dag_modelling.plot.graphviz import GraphDot
 
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 
 def test_model_dayabay(output_path: str):

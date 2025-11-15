@@ -2,7 +2,7 @@ from dag_modelling.tools.logger import set_verbosity
 from numpy import allclose, fabs
 from pytest import fixture, mark
 
-from dayabay_model_official import model_dayabay
+from dayabay_model import model_dayabay
 
 source_type_reference = "hdf5"
 source_types_other = ["tsv", "npz", "root"]
