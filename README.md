@@ -1,11 +1,11 @@
-# dayabay-model-official
+# dayabay-model
 
 [![python](https://img.shields.io/badge/python-3.11-purple.svg)](https://www.python.org/)
-[![pipeline](https://git.jinr.ru/dagflow-team/dayabay-model-official/badges/main/pipeline.svg)](https://git.jinr.ru/dagflow-team/dayabay-model-official/commits/main)
-[![coverage report](https://git.jinr.ru/dagflow-team/dayabay-model-official/badges/main/coverage.svg)](https://git.jinr.ru/dagflow-team/dayabay-model-official/-/commits/main)
+[![pipeline](https://git.jinr.ru/dagflow-team/dayabay-model/badges/main/pipeline.svg)](https://git.jinr.ru/dagflow-team/dayabay-model/commits/main)
+[![coverage report](https://git.jinr.ru/dagflow-team/dayabay-model/badges/main/coverage.svg)](https://git.jinr.ru/dagflow-team/dayabay-model/-/commits/main)
 
 <!--- Uncomment here after adding docs!
-[![pages](https://img.shields.io/badge/pages-link-white.svg)](http://dagflow-team.pages.jinr.ru/dayabay-model-official)
+[![pages](https://img.shields.io/badge/pages-link-white.svg)](http://dagflow-team.pages.jinr.ru/dayabay-model)
 -->
 
 Official model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data.
@@ -18,18 +18,18 @@ Official model of the Daya Bay reactor antineutrino experiment for neutrino osci
 
 ## Repositories
 
-- Development/CI: https://git.jinr.ru/dagflow-team/dayabay-model-official
-- Contact/pypi/mirror: https://github.com/dagflow-team/dayabay-model-official
-- PYPI: https://pypi.org/project/dayabay-model-official
+- Development/CI: https://git.jinr.ru/dagflow-team/dayabay-model
+- Contact/pypi/mirror: https://github.com/dagflow-team/dayabay-model
+- PYPI: https://pypi.org/project/dayabay-model
 
 ## Minimal working example
 
-If you want to run examples from `extras/mwe`, clone this repository `git clone https://github.com/dagflow-team/dayabay-model-official` and change position to cloned reposiotry `cd dayabay-model-official`.
+If you want to run examples from `extras/mwe`, clone this repository `git clone https://github.com/dagflow-team/dayabay-model` and change position to cloned reposiotry `cd dayabay-model`.
 However, you can just copy examples that are listed below and run them where you want after installation of package and several others steps:
 
-1. Install package `pip install dayabay-model-official`
+1. Install package `pip install dayabay-model`
 2. Install required packages: `pip install -r requirements`
-3. Clone the repository with Daya Bay data `git clone https://github.com/dagflow-team/dayabay-data-official`
+3. Clone the repository with Daya Bay data `git clone https://github.com/dayabay-experiment/dayabay-data-official`
   - Make sure that you have `git-lfs` in your system or install it
   - After installing `git-lfs`, change directory to `dayabay-data-official` and run command `git lfs pull` to download more files
   - Check any file that it was properly uploaded: `cat parameters-common/reactor_antineutrino_spectrum_edges.tsv`

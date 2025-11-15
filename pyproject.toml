@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 requires = [ "packaging", "setuptools", "wheel" ]
 
 [project]
-name = "dayabay-model-official"
-version = "1.5.0"
-description = "Official model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data."
+name = "dayabay-model"
+version = "1.6.0"
+description = "Model of the Daya Bay reactor antineutrino experiment for neutrino oscillation analysis based on gadolinium capture data."
 readme = "README.md"
 license = "MIT"
 maintainers = [ { name = "DAGModelling Team", email = "dagflow@jinr.ru" } ]
@@ -36,11 +36,10 @@ optional-dependencies.test = [
   "pygraphviz",
 ]
 
-urls."Bug Tracker" = "https://github.com/dagflow-team/dayabay-model-official/issues"
-urls."DAGModelling Team" = "https://github.com/dagflow-team"
-urls.documentation = "https://github.com/dagflow-team/dayabay-model-official/wiki"
-urls.homepage = "https://github.com/dagflow-team/dayabay-model-official"
-urls.repository = "https://github.com/dagflow-team/dayabay-model-official"
+urls."Bug Tracker" = "https://github.com/dayabay-experiment/dayabay-model/issues"
+urls.documentation = "https://github.com/dayabay-experiment/dayabay-model/wiki"
+urls.homepage = "https://github.com/dayabay-experiment/dayabay-model"
+urls.repository = "https://github.com/dayabay-experiment/dayabay-model"
 
 [tool.setuptools.package-data]
 "*" = [ "*.yaml" ]
