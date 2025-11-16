@@ -59,7 +59,7 @@ export PYTHONPATH=$PHYTHONPATH:$PWD
 
 #### Simple run
 
-Assuming the environment variables are set, the
+Assuming the environment variables are set, the model ca TODO
 
 1. Run script
   ```bash
